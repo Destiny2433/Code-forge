@@ -1,0 +1,100 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ course.title }} · CodeForge{% endblock %}
+{% block meta_description %}{{ course.description }} Learn the essential concepts behind responsive design, HTML, CSS, accessibility, and practical front-end development with CodeForge by HiveryTech.{% endblock %}
+
+{% block content %}
+<section class="course-header">
+  <div class="course-main">
+    <p class="eyebrow">{{ course.category|upper }} · {{ course.difficulty|upper }}</p>
+    <h1>{{ course.title }}</h1>
+    <p class="lead">{{ course.description }}</p>
+
+    <div class="course-meta">
+      <span>{{ course.duration }}</span>
+      <span>{{ course.lessons()|length }} lessons</span>
+      <span>By {{ course.instructor }}</span>
+    </div>
+
+    <div class="actions">
+      {% if current_user.is_authenticated %}
+        {% if course not in current_user.enrollments %}
+          <form method="post" action="{{ url_for('main.enroll', slug=course.slug) }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button class="button">Enroll free</button>
+          </form>
+        {% endif %}
+        <a class="button" href="{{ url_for('main.lesson', course_slug=course.slug, lesson_slug=course.lessons()[0].slug) }}">{{ 'Continue learning' if course.progress_for(current_user) else 'Start first lesson' }}</a>
+        <p class="progress-label">Your progress: {{ course.progress_for(current_user) }}%</p>
+      {% else %}
+        <a class="button" href="{{ url_for('main.lesson', course_slug=course.slug, lesson_slug=course.lessons()[0].slug) }}">Preview first lesson</a>
+        <a class="button ghost" href="{{ url_for('main.register') }}">Create account to save progress</a>
+      {% endif %}
+      <a class="button ghost" href="/courses">Browse all courses</a>
+    </div>
+  </div>
+
+  <aside class="course-panel">
+    <div class="course-panel-head">
+      <span>Certification path</span>
+      <strong>Responsive Web Design</strong>
+    </div>
+    <ul class="course-panel-list">
+      <li>Complete the required projects to qualify for the exam.</li>
+      <li>Pass the Responsive Web Design Certification exam.</li>
+      <li>Earn a verifiable CodeForge certificate.</li>
+    </ul>
+  </aside>
+</section>
+
+<section class="course-cta-row">
+  <div class="mini-brief">
+    <p class="eyebrow">To earn your {{ course.title }}</p>
+    <h2>Certification requirements</h2>
+    <ul class="checklist">
+      <li>Complete the five required projects to qualify for the certification exam.</li>
+      <li>Pass the Responsive Web Design Certification exam.</li>
+    </ul>
+  </div>
+
+  <div class="search-panel">
+    <label for="course-search">Search lessons in the curriculum</label>
+    <input id="course-search" type="search" placeholder="Submit search terms">
+  </div>
+</section>
+
+<section class="curriculum">
+  <div class="section-head">
+    <div>
+      <p class="eyebrow">Courses</p>
+      <h2>{{ course.title }}</h2>
+    </div>
+    <span class="muted">{{ course.modules|length }} modules</span>
+  </div>
+
+  <div class="curriculum-shell">
+    {% for module in course.modules %}
+      <details open class="module-card">
+        <summary>
+          <span>{{ loop.index }}</span>
+          <div>
+            <strong>{{ module.title }}</strong>
+            <small>{{ module.lessons|length }} steps</small>
+          </div>
+          <em>{{ module.lessons|selectattr('id', 'in', completed_lesson_ids)|list|length }} of {{ module.lessons|length }} steps complete</em>
+        </summary>
+
+        <div class="module-group">
+          {% for lesson in module.lessons %}
+            <a href="{{ url_for('main.lesson', course_slug=course.slug, lesson_slug=lesson.slug) }}" class="lesson-row{% if lesson.id in completed_lesson_ids %} completed{% endif %}">
+              <span class="lesson-name">{{ lesson.title }}</span>
+              <span class="lesson-tag">{{ 'Complete' if lesson.id in completed_lesson_ids else 'Start lesson' }}</span>
+            </a>
+          {% endfor %}
+        </div>
+      </details>
+    {% endfor %}
+  </div>
+</section>
+{% endblock %}
+

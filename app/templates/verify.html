@@ -1,0 +1,25 @@
+{% extends 'base.html' %}
+{% block title %}Certificate Verified · CodeForge{% endblock %}
+
+{% block content %}
+<section class="verify">
+  <p class="eyebrow">Certificate verified</p>
+  <h1>Achievement unlocked.</h1>
+  <p class="lead">CodeForge recognizes this learner for completing the {{ certificate.course.title }} path.</p>
+
+  <div class="certificate" role="img" aria-label="Certificate for {{ certificate.user.name }} from CodeForge by HiveryTech">
+    <div class="certificate-badge">CodeForge</div>
+    <p class="certificate-subtitle">by HiveryTech</p>
+    <h2>{{ certificate.user.name }}</h2>
+    <p class="certificate-copy">has successfully completed</p>
+    <h3>{{ certificate.course.title }}</h3>
+    <p class="certificate-copy">Awarded on {{ certificate.awarded_at.strftime('%B %d, %Y') }}</p>
+
+    <div class="certificate-meta">
+      <span>Credential ID: {{ certificate.certificate_id }}</span>
+      <span>Issued by CodeForge</span>
+    </div>
+  </div>
+</section>
+{% endblock %}
+

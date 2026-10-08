@@ -1,0 +1,1 @@
+const C='hiverytech-v1';self.addEventListener('install',e=>e.waitUntil(caches.open(C).then(c=>c.addAll(['/static/css/app.css','/static/js/app.js']))));self.addEventListener('fetch',e=>{if(e.request.method==='GET'&&new URL(e.request.url).pathname.startsWith('/static/'))e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request)))});

@@ -1,0 +1,80 @@
+{% extends 'base.html' %}
+
+{% block title %}CodeForge | Learn Web Development{% endblock %}
+{% block meta_description %}CodeForge helps you learn web development with structured lessons, HTML/CSS practice, responsive design training, and beginner-friendly coding projects from HiveryTech.{% endblock %}
+{% block og_title %}CodeForge{% endblock %}
+{% block og_description %}Learn HTML, CSS, responsive design, and coding fundamentals with guided lessons from CodeForge by HiveryTech.{% endblock %}
+
+{% block content %}
+<section class="hero">
+  <div>
+    <p class="eyebrow">PRACTICAL, BEGINNER-FRIENDLY CODING EDUCATION</p>
+    <h1>Learn to build modern websites.<br><em>From the first tag to the final layout.</em></h1>
+    <p class="lead">CodeForge gives you a clear, structured path to learn web development, master responsive design, and build confidence with hands-on practice.</p>
+    <div class="actions">
+      <a class="button" href="/register">Start Learning →</a>
+      <a class="button ghost" href="/courses">Explore Courses</a>
+    </div>
+    <p class="trust">Free lessons. Real practice. A path designed to help you grow.</p>
+  </div>
+
+  <div class="hero-panel">
+    <div class="terminal-top">● ● ● <span>responsive-web-design.html</span></div>
+    <pre><code>&lt;header&gt;
+  &lt;h1&gt;Build with confidence&lt;/h1&gt;
+  &lt;p&gt;Learn HTML, CSS, and responsive layouts.&lt;/p&gt;
+&lt;/header&gt;
+
+&lt;main&gt;
+  &lt;button&gt;Start your journey&lt;/button&gt;
+&lt;/main&gt;
+
+<span>✓ CodeForge</span></code></pre>
+  </div>
+</section>
+
+<section class="section">
+  <div class="section-head">
+    <div>
+      <p class="eyebrow">START WHERE YOU ARE</p>
+      <h2>A clear path, not a maze.</h2>
+    </div>
+    <a href="/courses">See all courses →</a>
+  </div>
+
+  <div class="cards">
+    {% for course in courses %}
+      <article class="course-card">
+        <div class="course-icon">{{ course.title[0] }}</div>
+        <p>{{ course.category }} · {{ course.difficulty }}</p>
+        <h3>{{ course.title }}</h3>
+        <span>{{ course.description }}</span>
+        <a href="{{ url_for('main.course', slug=course.slug) }}">View course →</a>
+      </article>
+    {% endfor %}
+  </div>
+</section>
+
+<section class="dark-band">
+  <p class="eyebrow">HOW IT WORKS</p>
+  <h2>Learn it. Try it. Make it yours.</h2>
+  <div class="steps">
+    <div>
+      <b>01</b>
+      <h3>Follow a path</h3>
+      <p>Clear modules keep each topic focused and easy to understand.</p>
+    </div>
+    <div>
+      <b>02</b>
+      <h3>Practice actively</h3>
+      <p>Try the examples, edit your code, and check your result immediately.</p>
+    </div>
+    <div>
+      <b>03</b>
+      <h3>Build real sites</h3>
+      <p>Turn new skills into projects you can show, share, and improve.</p>
+    </div>
+  </div>
+</section>
+{% endblock %}
+

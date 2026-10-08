@@ -1,0 +1,101 @@
+{% extends 'base.html' %}
+{% block title %}{{ lesson.title }} · {{ course.title }}{% endblock %}
+{% block content %}
+<div class="lesson-layout" style="position: relative;">
+  <!-- Data injected for app.js -->
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <script id="lesson-tests" type="application/json">{{ lesson.tests | safe }}</script>
+  <script id="lesson-hints" type="application/json">{{ lesson.hints | safe }}</script>
+
+  <!-- Pane 1: Instructions & Tests -->
+  <article class="lesson-content">
+    <a href="{{ url_for('main.course',slug=course.slug) }}" style="color:var(--muted); font-size: 13px; text-decoration: underline; margin-bottom: 10px;">← Back to {{ course.title }}</a>
+    <p class="eyebrow" style="margin-top:0;">LESSON</p>
+    <h1 style="font-size: 24px;">{{ lesson.title }}</h1>
+    <div style="font-size: 15px; line-height: 1.6; color: var(--ink);">
+      {{ lesson.body|safe }}
+    </div>
+
+    <!-- Test Results Panel -->
+    <div class="test-results" style="display:none; margin-top: auto;" id="test-results">
+      <h3 style="margin-top:0; font-size:16px;">Tests</h3>
+      <ul id="test-list" style="list-style:none; padding:0; margin:0; font-size:14px;"></ul>
+    </div>
+    
+    <div style="display: flex; gap: 10px; margin-top: auto;">
+      <button class="button complete" data-lesson="{{ lesson.id }}" style="flex-grow: 1;">Check Your Code</button>
+      <button class="button" id="next-lesson-btn" data-lesson="{{ lesson.id }}" style="display:none; background: #10b981;">Complete and continue</button>
+    </div>
+  </article>
+
+  <!-- Pane 2: Editor (Teaching Flow) -->
+  <div class="editor" data-language="{{ lesson.language }}" data-course="{{ course.slug }}" id="editor-container" style="display: flex; flex-direction: column;">
+    
+    <!-- AI Teaching Example Code -->
+    <div class="editor-bar" style="background: rgba(38,119,255,0.1); color: var(--blue);">
+      <span>💡 AI Teaching Example — Study this code, then write it below</span>
+    </div>
+    <textarea class="example-code" spellcheck="false" readonly style="flex-grow: 0; min-height: 100px; background: rgba(0,0,0,0.02); color: #69d9a2; width: 100%; border: 0; padding: 18px; font: 14px/1.6 ui-monospace, monospace; resize: none; outline: 0;">{{ lesson.example_code }}</textarea>
+
+    <!-- User's Code Input -->
+    <div class="editor-bar" style="margin-top: 10px;">
+      <span>Your Code</span>
+      <button class="reset">Reset</button>
+    </div>
+    {% if course.slug in ['html-css', 'responsive-web-design'] and lesson.language == 'html' %}
+      <div class="file-tabs">
+        <button class="file-tab active" data-file="html">index.html</button>
+        <button class="file-tab" data-file="css">styles.css</button>
+      </div>
+      <textarea class="code-file active" data-file="html" spellcheck="false" id="code-box-html">{{ lesson.code }}</textarea>
+      <textarea class="code-file" data-file="css" spellcheck="false" id="code-box-css"></textarea>
+    {% else %}
+      {% if lesson.language == 'css' %}
+        <div class="file-tabs">
+          <button class="file-tab active" data-file="css">styles.css</button>
+        </div>
+        <textarea class="code-file active" data-file="css" spellcheck="false" id="code-box-css">{{ lesson.code }}</textarea>
+      {% else %}
+      <textarea class="code-file active" data-file="code" spellcheck="false" id="code-box-main">{{ lesson.code }}</textarea>
+      {% endif %}
+    {% endif %}
+  </div>
+
+  <!-- Pane 3: Preview/Console -->
+  <div class="preview-pane">
+    <div class="preview-bar" style="display:flex; justify-content:space-between; align-items:center;">
+      <span>{% if course.slug in ['html-css', 'responsive-web-design'] %}Live Preview{% else %}Console Output{% endif %}</span>
+    </div>
+    {% if course.slug in ['html-css', 'responsive-web-design'] %}
+      <iframe class="preview-frame" id="live-preview" title="Your live webpage preview" sandbox="allow-scripts allow-modals"></iframe>
+      <pre class="output" aria-live="polite" style="display:none;" id="console-output"></pre>
+    {% else %}
+      <pre class="output" aria-live="polite" id="console-output" style="flex-grow:1;">Ready for execution. Click "Check Your Code" to run your program.</pre>
+    {% endif %}
+  </div>
+
+  <!-- AI Chatbot Floating Widget -->
+  <div id="ai-chatbot" style="position: fixed; bottom: 20px; right: 20px; width: 300px; background: var(--card-bg); border: 1px solid var(--blue); border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); display: flex; flex-direction: column; overflow: hidden; z-index: 100;">
+    <div id="ai-chat-header" style="background: var(--blue); color: #fff; padding: 10px 15px; font-weight: bold; cursor: pointer; display: flex; justify-content: space-between;">
+      <span>🤖 HiveryTech Tutor AI</span>
+      <span id="ai-chat-toggle">+</span>
+    </div>
+    <div id="ai-chat-body" style="padding: 15px; height: 250px; overflow-y: auto; display: none; flex-direction: column; gap: 10px; background: var(--paper);">
+      <div class="ai-msg" style="background: rgba(38,119,255,0.1); padding: 10px; border-radius: 8px; font-size: 13px; color: var(--ink);">
+        Hi! I'm your AI teaching assistant. I'm here to help you understand this lesson. Click "Get a Hint" if you are stuck!
+      </div>
+    </div>
+    <div id="ai-chat-controls" style="padding: 10px; border-top: 1px solid var(--line); background: var(--card-bg); display: none;">
+      <button id="ai-hint-btn" class="button small" style="width: 100%;">Get a Hint 💡</button>
+    </div>
+  </div>
+</div>
+
+<!-- Load Pyodide for Python testing -->
+{% if lesson.language == 'python' %}
+<script src="https://cdn.jsdelivr.net/pyodide/v0.24.1/full/pyodide.js"></script>
+{% endif %}
+
+<!-- Confetti script -->
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+{% endblock %}

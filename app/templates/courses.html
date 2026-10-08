@@ -1,0 +1,46 @@
+{% extends 'base.html' %}
+{% block title %}Courses · CodeForge{% endblock %}
+{% block meta_description %}Explore the structured CodeForge curriculum for responsive web design, HTML fundamentals, CSS foundations, and practical front-end learning by HiveryTech.{% endblock %}
+
+{% block content %}
+<section class="page-hero">
+  <p class="eyebrow">THE CURRICULUM</p>
+  <h1>Learn the web the practical way.</h1>
+  <p>Choose a guided learning track and build your skills one lesson at a time.</p>
+</section>
+
+<section class="curriculum">
+  {% for course in courses %}
+    <details {% if loop.first %}open{% endif %}>
+      <summary>
+        <span>{{ course.category }} Certification</span>
+        {{ course.title }}
+        <small>({{ course.duration }})</small>
+      </summary>
+      <div class="course-modules">
+        {% for module in course.modules %}
+          <div class="module-group">
+            <h4>{{ module.title }}</h4>
+            <div class="module-lessons">
+              {% for lesson in module.lessons %}
+                <a href="{{ url_for('main.lesson', course_slug=course.slug, lesson_slug=lesson.slug) }}">
+                  <span>
+                    {% if current_user.is_authenticated and lesson.id in (current_user.progress|map(attribute='lesson_id')|list) %}
+                      <span class="lesson-status success">✓</span>
+                    {% else %}
+                      <span class="lesson-status neutral">○</span>
+                    {% endif %}
+                    {{ lesson.title }}
+                  </span>
+                  <b>Start →</b>
+                </a>
+              {% endfor %}
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    </details>
+  {% endfor %}
+</section>
+{% endblock %}
+
