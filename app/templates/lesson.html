@@ -12,8 +12,11 @@
     <a href="{{ url_for('main.course',slug=course.slug) }}" style="color:var(--muted); font-size: 13px; text-decoration: underline; margin-bottom: 10px;">← Back to {{ course.title }}</a>
     <p class="eyebrow" style="margin-top:0;">LESSON</p>
     <h1 style="font-size: 24px;">{{ lesson.title }}</h1>
-    <div style="font-size: 15px; line-height: 1.6; color: var(--ink);">
+    <div class="lesson-explanation" style="font-size: 15px; line-height: 1.6; color: var(--ink);">
       {{ lesson.body|safe }}
+      {% if lesson.language == 'css' %}
+        <p class="note"><strong>How to practice:</strong> edit the code in styles.css. The sample page in the preview is already written for you; your CSS styles it as you type. Select “Check Your Code” when your changes are ready.</p>
+      {% endif %}
     </div>
 
     <!-- Test Results Panel -->
@@ -33,13 +36,13 @@
     
     <!-- AI Teaching Example Code -->
     <div class="editor-bar" style="background: rgba(38,119,255,0.1); color: var(--blue);">
-      <span>💡 AI Teaching Example — Study this code, then write it below</span>
+      <span>{% if lesson.language == 'css' %}🎨 CSS Example — Study the rule, then style the preview below{% else %}💡 Lesson Example — Study this code, then try it below{% endif %}</span>
     </div>
     <textarea class="example-code" spellcheck="false" readonly style="flex-grow: 0; min-height: 100px; background: rgba(0,0,0,0.02); color: #69d9a2; width: 100%; border: 0; padding: 18px; font: 14px/1.6 ui-monospace, monospace; resize: none; outline: 0;">{{ lesson.example_code }}</textarea>
 
     <!-- User's Code Input -->
     <div class="editor-bar" style="margin-top: 10px;">
-      <span>Your Code</span>
+      <span>{% if lesson.language == 'css' %}Your CSS{% else %}Your Code{% endif %}</span>
       <button class="reset">Reset</button>
     </div>
     {% if course.slug in ['html-css', 'responsive-web-design'] and lesson.language == 'html' %}
@@ -47,16 +50,16 @@
         <button class="file-tab active" data-file="html">index.html</button>
         <button class="file-tab" data-file="css">styles.css</button>
       </div>
-      <textarea class="code-file active" data-file="html" spellcheck="false" id="code-box-html">{{ lesson.code }}</textarea>
+      <textarea class="code-file active" data-file="html" spellcheck="false" id="code-box-html"></textarea>
       <textarea class="code-file" data-file="css" spellcheck="false" id="code-box-css"></textarea>
     {% else %}
       {% if lesson.language == 'css' %}
         <div class="file-tabs">
           <button class="file-tab active" data-file="css">styles.css</button>
         </div>
-        <textarea class="code-file active" data-file="css" spellcheck="false" id="code-box-css">{{ lesson.code }}</textarea>
+        <textarea class="code-file active" data-file="css" spellcheck="false" id="code-box-css"></textarea>
       {% else %}
-      <textarea class="code-file active" data-file="code" spellcheck="false" id="code-box-main">{{ lesson.code }}</textarea>
+      <textarea class="code-file active" data-file="code" spellcheck="false" id="code-box-main"></textarea>
       {% endif %}
     {% endif %}
   </div>
@@ -64,10 +67,13 @@
   <!-- Pane 3: Preview/Console -->
   <div class="preview-pane">
     <div class="preview-bar" style="display:flex; justify-content:space-between; align-items:center;">
-      <span>{% if course.slug in ['html-css', 'responsive-web-design'] %}Live Preview{% else %}Console Output{% endif %}</span>
+      <span>{% if course.slug in ['html-css', 'responsive-web-design'] %}{% if lesson.language == 'css' %}Styled Result{% else %}Live Preview{% endif %}{% else %}Console Output{% endif %}</span>
     </div>
-    {% if course.slug in ['html-css', 'responsive-web-design'] %}
+    {% if course.slug in ['html-css', 'responsive-web-design'] and lesson.language in ['html', 'css'] %}
       <iframe class="preview-frame" id="live-preview" title="Your live webpage preview" sandbox="allow-scripts allow-modals"></iframe>
+      {% if lesson.language == 'css' %}
+        <textarea id="preview-html" hidden><main class="card"><h1>Style this page</h1><p>Edit the CSS to change this text and card.</p><a href="#practice">Try a link</a></main></textarea>
+      {% endif %}
       <pre class="output" aria-live="polite" style="display:none;" id="console-output"></pre>
     {% else %}
       <pre class="output" aria-live="polite" id="console-output" style="flex-grow:1;">Ready for execution. Click "Check Your Code" to run your program.</pre>

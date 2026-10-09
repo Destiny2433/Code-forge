@@ -14,6 +14,12 @@
 - [x] Fix live preview using iframe srcdoc to avoid cross-origin browser errors.
 - [x] Collapse the tutor initially so it does not block lesson controls.
 - [x] Make startup seed new lessons additively without deleting existing accounts or progress.
+- [x] Add a beginner-to-intermediate CSS learning sequence with explanations, examples, blank practice editor, hints, and checks.
+- [x] Teach selectors, colors, units, spacing, box model, typography, states, forms, Flexbox, Grid, responsive queries, variables, positioning, and motion.
+- [x] Add a CSS-only live preview so learners can edit styles and see their effect immediately.
+- [x] Leave the learner's code editor empty; keep worked examples separate.
+- [x] Move CSS practice out of the HTML module and into CSS topics during seeding.
+- [x] Verify the CSS-from-scratch lesson renders, CSS input updates the preview, and CSS checks pass in a browser.
 
 ## Verification still required
 
@@ -21,7 +27,8 @@
 - [x] Run the Flask app and confirm course and lesson routes render with the updated curriculum.
 - [x] Test lesson checks and first-to-next navigation in a browser.
 - [ ] Finish verifying saved progress display after sign-in.
-- [ ] Confirm the existing local database contains the latest curriculum seed.
+- [x] Confirm an existing database receives new curriculum additively at app startup.
+- [ ] Verify saved progress display after returning to the curriculum.
 - [ ] Run the project's automated tests, if available.
 
 ## Product identity

@@ -2,7 +2,7 @@ import json
 import os
 
 from . import db
-from .models import Course, Lesson, Module, User
+from .models import Course, Lesson, LessonProgress, Module, User
 
 
 def build_lesson(title, slug, body, example_code, code, language="html", tests=None, hints=None):
@@ -48,6 +48,142 @@ def seed():
                             ],
                             hints=["Keep the existing page skeleton.", "Add a <p> sentence inside <body>.", "A paragraph needs both <p> and </p> tags."]
                         ),
+                                    build_lesson(
+                                        "CSS from Scratch: Style Your First Page",
+                                        "css-from-scratch-first-styles",
+                                        "<p><strong>What CSS does:</strong> HTML describes what content is; CSS describes how it looks. A CSS rule has a selector (what to style) and declarations (which visual changes to make).</p><p><strong>Read this rule:</strong> in <code>p { color: navy; }</code>, <code>p</code> selects every paragraph and <code>color: navy</code> changes its text color. The braces hold the declarations, and each declaration ends with a semicolon.</p><p><strong>Your task:</strong> select the page body and set a readable font. Then give the heading a color. Use the styles.css editor tab.</p>",
+                                        "body {\n  font-family: Arial, sans-serif;\n}\n\nh1 {\n  color: #2563eb;\n}",
+                                        "body {\n  font-family: Arial, sans-serif;\n}\n",
+                                        language="css",
+                                        tests=[
+                                            {"test": "code.includes('body')", "message": "Add a CSS rule for body."},
+                                            {"test": "code.includes('font-family')", "message": "Set a font-family for readable text."},
+                                            {"test": "code.includes('h1') && code.includes('color')", "message": "Add a color declaration for the h1 heading."}
+                                        ],
+                                        hints=["Write body followed by curly braces.", "Inside the body rule, add font-family: Arial, sans-serif;", "Add a second rule for h1 and set its color."]
+                                    ),
+                                    build_lesson(
+                                        "CSS Selectors: Choose What to Style",
+                                        "css-selectors-elements-classes-ids",
+                                        "<p><strong>Understand it:</strong> a selector chooses which HTML elements receive a rule. A type selector like <code>p</code> selects all paragraphs. A class selector starts with a dot, like <code>.card</code>, and can be reused. An ID selector starts with <code>#</code> and is intended for one unique element.</p><p>In <code>&lt;article class=\"card\"&gt;</code>, the matching selector is <code>.card</code>. Class names do not include the dot in HTML; the dot is only CSS selector syntax.</p><p><strong>Your task:</strong> style every paragraph, then create a reusable .card rule.</p>",
+                                        "p {\n  color: #334155;\n}\n\n.card {\n  background-color: #eff6ff;\n}",
+                                        "p {\n  color: #334155;\n}\n",
+                                        language="css",
+                                        tests=[
+                                            {"test": "code.includes('p') && code.includes('color')", "message": "Style paragraph elements using a p selector."},
+                                            {"test": "code.includes('.card')", "message": "Create a reusable class selector named .card."},
+                                            {"test": "code.includes('background-color')", "message": "Give the card a background color."}
+                                        ],
+                                        hints=["A type selector is just the element name: p.", "Start the class selector with a dot: .card.", "Use background-color inside the .card rule."]
+                                    ),
+                                    build_lesson(
+                                        "CSS Colors and Readable Contrast",
+                                        "css-colors-and-contrast",
+                                        "<p><strong>Understand it:</strong> CSS colors can use names, hexadecimal values such as <code>#1d4ed8</code>, or RGB values. Use <code>color</code> for text and <code>background-color</code> for the element's background.</p><p><strong>Accessibility tip:</strong> text needs enough contrast against its background to be readable. Avoid pale text on a pale background.</p><p><strong>Your task:</strong> give the page a light background and set the text to a dark, readable color.</p>",
+                                        "body {\n  color: #1e293b;\n  background-color: #f8fafc;\n}",
+                                        "body {\n  color: #1e293b;\n}",
+                                        language="css",
+                                        tests=[
+                                            {"test": "code.includes('color:')", "message": "Set a text color."},
+                                            {"test": "code.includes('background-color:')", "message": "Set a background color."}
+                                        ],
+                                        hints=["Use color for the text.", "Use background-color for the page surface.", "A dark text color on a light background is a readable choice."]
+                                    ),
+                                    build_lesson(
+                                        "CSS Units: Pixels, rem, and Percentages",
+                                        "css-units-pixels-rem-percentages",
+                                        "<p><strong>Understand it:</strong> CSS values need units when they represent size or distance. <code>px</code> is a fixed-size unit. <code>rem</code> scales relative to the root text size, which often helps accessible typography. <code>%</code> is relative to a containing size.</p><p><strong>Your task:</strong> make the page text comfortable to read with a rem size, and limit the main content width with a percentage.</p>",
+                                        "body {\n  font-size: 1rem;\n}\n\nmain {\n  width: 90%;\n}",
+                                        "body {\n  font-size: 16px;\n}",
+                                        language="css",
+                                        tests=[
+                                            {"test": "code.includes('font-size') && /font-size\\s*:[^;]*rem/.test(code)", "message": "Set font-size using rem units."},
+                                            {"test": "code.includes('width') && code.includes('%')", "message": "Use a percentage width for the main content."}
+                                        ],
+                                        hints=["Use font-size: 1rem; on body.", "Create a main selector.", "A width such as 90% adapts to the available space."]
+                                    ),
+                                    build_lesson(
+                                        "Spacing with Margin and Padding",
+                                        "css-margin-and-padding",
+                                        "<p><strong>Understand it:</strong> padding is space inside an element, between its content and border. Margin is space outside an element, separating it from neighbors. Think of padding as the cushion inside a box and margin as the gap around the box.</p><p><strong>Your task:</strong> add comfortable inner space to a card and room around it.</p>",
+                                        ".card {\n  padding: 1.5rem;\n  margin: 1rem;\n}",
+                                        ".card {\n  padding: 1rem;\n}",
+                                        language="css",
+                                        tests=[
+                                            {"test": "code.includes('.card')", "message": "Target the card class."},
+                                            {"test": "code.includes('padding:')", "message": "Add inner spacing with padding."},
+                                            {"test": "code.includes('margin:')", "message": "Add outer spacing with margin."}
+                                        ],
+                                        hints=["Keep the .card selector.", "Padding is inside the element.", "Add margin for space outside it."]
+                                    ),
+                                    build_lesson(
+                                        "Borders, Width, and the Box Model",
+                                        "css-borders-width-box-model",
+                                        "<p><strong>Understand it:</strong> every element is a box made of content, padding, border, and margin. The <code>border</code> draws an edge around the padding and content. <code>border-radius</code> rounds its corners. Width controls the content size unless you change the box-sizing model.</p><p><strong>Your task:</strong> give a card a border, rounded corners, and a sensible width.</p>",
+                                        ".card {\n  width: 100%;\n  border: 1px solid #cbd5e1;\n  border-radius: 12px;\n  box-sizing: border-box;\n}",
+                                        ".card {\n  border: 1px solid #cbd5e1;\n}",
+                                        language="css",
+                                        tests=[
+                                            {"test": "code.includes('border:')", "message": "Add a border to the card."},
+                                            {"test": "code.includes('border-radius')", "message": "Round the card corners."},
+                                            {"test": "code.includes('width:')", "message": "Set the card width."}
+                                        ],
+                                        hints=["Use the .card selector.", "The border shorthand can include width, style, and color.", "Add border-radius and width declarations."]
+                                    ),
+                                    build_lesson(
+                                        "Typography: Fonts, Line Height, and Text Alignment",
+                                        "css-typography-and-line-height",
+                                        "<p><strong>Understand it:</strong> typography affects how easily people can read. <code>font-family</code> chooses a typeface, <code>font-size</code> controls its size, and <code>line-height</code> controls vertical space between lines. A line-height around 1.5 is a useful starting point for body text.</p><p><strong>Your task:</strong> set a sans-serif font and improve paragraph line spacing.</p>",
+                                        "body {\n  font-family: Arial, sans-serif;\n}\n\np {\n  line-height: 1.5;\n}",
+                                        "body {\n  font-family: Arial, sans-serif;\n}",
+                                        language="css",
+                                        tests=[
+                                            {"test": "code.includes('font-family')", "message": "Choose a font family."},
+                                            {"test": "code.includes('line-height')", "message": "Set comfortable line spacing."}
+                                        ],
+                                        hints=["Set font-family on body.", "Add a p rule.", "Try line-height: 1.5; for paragraphs."]
+                                    ),
+                                    build_lesson(
+                                        "Pseudo-Classes: Style Interaction States",
+                                        "css-pseudo-classes-hover-focus",
+                                        "<p><strong>Understand it:</strong> a pseudo-class styles an element in a particular state. <code>:hover</code> applies while a pointer is over a link or button. <code>:focus</code> applies when it is selected using a keyboard or other input.</p><p><strong>Accessibility tip:</strong> do not remove the keyboard focus indicator unless you replace it with an equally visible one.</p><p><strong>Your task:</strong> add a hover color and a clear focus outline for links.</p>",
+                                        "a:hover {\n  color: #1d4ed8;\n}\n\na:focus {\n  outline: 3px solid #93c5fd;\n}",
+                                        "a:hover {\n  color: #1d4ed8;\n}",
+                                        language="css",
+                                        tests=[
+                                            {"test": "code.includes('a:hover')", "message": "Add a hover state for links."},
+                                            {"test": "code.includes('a:focus') && code.includes('outline')", "message": "Provide a visible keyboard focus style."}
+                                        ],
+                                        hints=["Use a:hover as a selector.", "Create a second selector: a:focus.", "Add an outline so keyboard focus remains visible."]
+                                    ),
+                                    build_lesson(
+                                        "CSS Layout with Flexbox",
+                                        "css-flexbox-first-layout",
+                                        "<p><strong>Understand it:</strong> Flexbox arranges items along a row or column. Set <code>display: flex</code> on a parent container to make its direct children flex items. Use <code>gap</code> to add even space between them.</p><p><strong>Your task:</strong> place a group of cards in a row with space between cards. On narrow screens, layouts can wrap with <code>flex-wrap: wrap</code>.</p>",
+                                        ".cards {\n  display: flex;\n  flex-wrap: wrap;\n  gap: 1rem;\n}",
+                                        ".cards {\n  display: flex;\n}",
+                                        language="css",
+                                        tests=[
+                                            {"test": "code.includes('.cards') && code.includes('display: flex')", "message": "Turn the cards container into a flex container."},
+                                            {"test": "code.includes('gap:')", "message": "Add consistent space between flex items."},
+                                            {"test": "code.includes('flex-wrap')", "message": "Allow items to wrap on smaller screens."}
+                                        ],
+                                        hints=["Flexbox is applied to the parent container.", "Use display: flex; on .cards.", "Add gap and flex-wrap declarations."]
+                                    ),
+                                    build_lesson(
+                                        "Responsive CSS with Media Queries",
+                                        "css-responsive-media-queries",
+                                        "<p><strong>Understand it:</strong> a media query applies styles only when a condition is true, such as when the screen is narrow. This lets you adjust layouts for phones without duplicating the whole stylesheet.</p><p><strong>Read this:</strong> <code>@media (max-width: 600px)</code> means the rules inside apply when the viewport is 600 pixels wide or less.</p><p><strong>Your task:</strong> write a media query that makes the page heading smaller on narrow screens.</p>",
+                                        "@media (max-width: 600px) {\n  h1 {\n    font-size: 2rem;\n  }\n}",
+                                        "@media (max-width: 600px) {\n  h1 {\n    font-size: 2rem;\n  }\n}",
+                                        language="css",
+                                        tests=[
+                                            {"test": "code.includes('@media')", "message": "Add a media query."},
+                                            {"test": "code.includes('max-width')", "message": "Use a maximum-width condition for smaller screens."},
+                                            {"test": "code.includes('font-size')", "message": "Adjust the heading font size inside the query."}
+                                        ],
+                                        hints=["Start with @media and parentheses.", "Try (max-width: 600px).", "Put an h1 font-size rule inside the braces."]
+                                    ),
                         build_lesson(
                             "HTML Elements: Opening Tags, Content, and Closing Tags",
                             "html-elements-opening-and-closing-tags",
@@ -242,6 +378,26 @@ def seed():
                 {
                     "title": "Styling Lists and Links",
                     "lessons": [
+                        build_lesson(
+                            "Style a Link Clearly",
+                            "css-style-links",
+                            "<p><strong>Understand it:</strong> the <code>a</code> selector styles links. The <code>text-decoration</code> property controls underline and other line decoration. Keep links visually distinguishable from ordinary text so visitors can recognize what is clickable.</p><p><strong>Your task:</strong> give links a clear blue color and keep their underline.</p>",
+                            "a {\n  color: #2563eb;\n  text-decoration: underline;\n}",
+                            "a {\n  color: #2563eb;\n}",
+                            language="css",
+                            tests=[{"test": "code.includes('a') && code.includes('color:')", "message": "Set a visible color for links."}, {"test": "code.includes('text-decoration')", "message": "Set an explicit link text decoration."}],
+                            hints=["Use a as the selector.", "Set its color.", "Keep links underlined with text-decoration."]
+                        ),
+                        build_lesson(
+                            "Style Hover and Focus States",
+                            "css-style-hover-focus-states",
+                            "<p><strong>Understand it:</strong> pseudo-classes add styles for interaction states. <code>:hover</code> responds to a pointer; <code>:focus</code> shows which control is selected by a keyboard. Interactive elements should provide feedback for both.</p><p><strong>Your task:</strong> make hovered links change color and make focused links show an outline.</p>",
+                            "a:hover { color: #1d4ed8; }\na:focus { outline: 3px solid #93c5fd; }",
+                            "a:hover { color: #1d4ed8; }",
+                            language="css",
+                            tests=[{"test": "code.includes('a:hover')", "message": "Add a hover state."}, {"test": "code.includes('a:focus') && code.includes('outline')", "message": "Add a visible focus outline."}],
+                            hints=["Start with the a:hover selector.", "Add a separate a:focus rule.", "Set an outline on the focus rule."]
+                        ),
                         build_lesson("How Do You Space List Items Using margin or line-height?", "space-list-items", "Tune list spacing for better readability and hierarchy.", "li { margin-bottom: 0.5rem; }", "li { margin-bottom: 0.5rem; }"),
                         build_lesson("How Do the Different list-style Properties Work?", "list-style-properties", "Customize bullets, numbering, and spacing in lists.", "ul { list-style: square; }\nol { list-style-type: decimal; }", "ul { list-style: square; }"),
                         build_lesson("Why Are Default Link Styles Important for Usability on the Web?", "why-default-link-styles-matter", "Understand the browser default link states and how they help users navigate.", "a { color: #2563eb; text-decoration: underline; }", "a { color: #2563eb; }"),
@@ -252,6 +408,16 @@ def seed():
                 {
                     "title": "Working with Backgrounds and Borders",
                     "lessons": [
+                        build_lesson(
+                            "Add Backgrounds and Borders to a Card",
+                            "css-card-backgrounds-and-borders",
+                            "<p><strong>Understand it:</strong> <code>background-color</code> fills an element's background. <code>border</code> draws an edge around it, and <code>border-radius</code> rounds the corners. Keep foreground text readable against the background.</p><p><strong>Your task:</strong> give a card a pale background and a subtle border.</p>",
+                            ".card {\n  background-color: #eff6ff;\n  border: 1px solid #bfdbfe;\n  border-radius: 12px;\n}",
+                            ".card {\n  background-color: #eff6ff;\n}",
+                            language="css",
+                            tests=[{"test": "code.includes('background-color')", "message": "Set a card background."}, {"test": "code.includes('border:')", "message": "Add a border around the card."}, {"test": "code.includes('border-radius')", "message": "Round the card corners."}],
+                            hints=["Target the .card class.", "Add a border declaration.", "Use border-radius for rounded corners."]
+                        ),
                         build_lesson("How Do Background Image Size, Repeat, Position, and Attachment Work?", "background-image-size-repeat-position-attachment", "Control how background graphics behave across layouts and sections.", ".banner { background-image: url('pattern.png'); background-size: cover; background-repeat: no-repeat; }", ".banner { background-image: url('pattern.png'); }"),
                         build_lesson("What Is a Background Gradient, and How Does It Work?", "background-gradient", "Create rich backgrounds using linear or radial gradients.", ".hero { background: linear-gradient(135deg, #1d4ed8, #60a5fa); }", ".hero { background: linear-gradient(135deg, #1d4ed8, #60a5fa); }"),
                         build_lesson("What Are Some Accessibility Considerations for Backgrounds?", "accessibility-considerations-for-backgrounds", "Avoid low-contrast or decorative backgrounds that reduce readability.", ".hero { color: #ffffff; background: #0f172a; }", ".hero { color: #ffffff; }"),
@@ -306,12 +472,32 @@ def seed():
                 {
                     "title": "The Box Model",
                     "lessons": [
+                        build_lesson(
+                            "The CSS Box Model: Content, Padding, Border, Margin",
+                            "css-box-model-content-padding-border-margin",
+                            "<p><strong>Understand it:</strong> each element is a rectangular box. From inside to outside, it has content, padding, border, and margin. Padding adds room inside the border; margin adds room outside it. The <code>box-sizing: border-box</code> rule makes declared width include padding and border, which is often easier to reason about.</p><p><strong>Your task:</strong> make the card's total width predictable and add both inner and outer spacing.</p>",
+                            ".card {\n  box-sizing: border-box;\n  width: 100%;\n  padding: 1rem;\n  margin: 1rem 0;\n  border: 1px solid #cbd5e1;\n}",
+                            ".card {\n  padding: 1rem;\n}",
+                            language="css",
+                            tests=[{"test": "code.includes('padding:')", "message": "Add space inside the box."}, {"test": "code.includes('margin:')", "message": "Add space outside the box."}, {"test": "code.includes('border:')", "message": "Include the border layer."}, {"test": "code.includes('box-sizing')", "message": "Set box-sizing to make width easier to manage."}],
+                            hints=["Padding is internal space.", "Margin is external space.", "Add box-sizing: border-box; to the card rule."]
+                        ),
                         build_lesson("The Box Model Overview", "box-model-overview", "Understand the content, padding, border, and margin layers of each element.", ".box { padding: 12px; border: 1px solid #dbeafe; margin: 16px; }", ".box { padding: 12px; }"),
                     ],
                 },
                 {
                     "title": "Flexbox",
                     "lessons": [
+                        build_lesson(
+                            "Flexbox: Align Items in a Row",
+                            "css-flexbox-align-items",
+                            "<p><strong>Understand it:</strong> Flexbox is a layout system for arranging a group of items. Put <code>display: flex</code> on the parent. <code>justify-content</code> distributes items along the main axis; <code>align-items</code> aligns them across the other axis. A <code>gap</code> creates consistent spacing.</p><p><strong>Your task:</strong> arrange the card items in a row, center them vertically, and create a gap.</p>",
+                            ".cards {\n  display: flex;\n  justify-content: space-between;\n  align-items: center;\n  gap: 1rem;\n}",
+                            ".cards {\n  display: flex;\n}",
+                            language="css",
+                            tests=[{"test": "code.includes('display: flex')", "message": "Make .cards a flex container."}, {"test": "code.includes('justify-content')", "message": "Set how items are distributed along the row."}, {"test": "code.includes('align-items')", "message": "Align items across the row."}, {"test": "code.includes('gap:')", "message": "Add consistent spacing between items."}],
+                            hints=["Flexbox goes on the parent container.", "Use justify-content and align-items for alignment.", "Use gap to space the cards."]
+                        ),
                         build_lesson("Build a Page of Playing Cards", "build-a-page-of-playing-cards", "Use flexbox to create balanced, responsive cards with aligned content.", "<section class=\"cards\"><article>Card 1</article><article>Card 2</article></section>", "<section class=\"cards\"><article>Card 1</article></section>"),
                     ],
                 },
@@ -354,6 +540,16 @@ def seed():
                 {
                     "title": "Grid",
                     "lessons": [
+                        build_lesson(
+                            "CSS Grid: Build Simple Columns",
+                            "css-grid-simple-columns",
+                            "<p><strong>Understand it:</strong> CSS Grid lays out content in rows and columns. Set <code>display: grid</code> on a parent, then describe columns with <code>grid-template-columns</code>. <code>repeat(2, 1fr)</code> means two equal-width columns.</p><p><strong>Your task:</strong> turn the feature container into a two-column grid with a gap between cards.</p>",
+                            ".features {\n  display: grid;\n  grid-template-columns: repeat(2, 1fr);\n  gap: 1rem;\n}",
+                            ".features {\n  display: grid;\n}",
+                            language="css",
+                            tests=[{"test": "code.includes('display: grid')", "message": "Turn the container into a grid."}, {"test": "code.includes('grid-template-columns')", "message": "Define the grid columns."}, {"test": "code.includes('gap:')", "message": "Add space between grid items."}],
+                            hints=["Add display: grid; to .features.", "Use repeat(2, 1fr) for two equal columns.", "Set a gap between the cards."]
+                        ),
                         build_lesson("Build a Product Landing Page", "build-a-product-landing-page", "Use grid to create structured product landing pages with interesting layouts.", "<section class=\"grid\"><article>Feature</article><article>Feature</article></section>", "<section class=\"grid\"><article>Feature</article></section>"),
                     ],
                 },
@@ -374,6 +570,60 @@ def seed():
     ]
 
     for course_data in catalog:
+        modules_by_title = {module["title"]: module for module in course_data["modules"]}
+        html_module = modules_by_title.get("Basic HTML")
+        css_module = modules_by_title.get("Basic CSS")
+        if html_module and css_module:
+            misplaced_css_lessons = [
+                lesson for lesson in html_module["lessons"]
+                if lesson.get("language") == "css"
+            ]
+            html_module["lessons"] = [
+                lesson for lesson in html_module["lessons"]
+                if lesson.get("language") != "css"
+            ]
+            css_module["lessons"] = misplaced_css_lessons + css_module["lessons"]
+
+        css_extensions = {
+            "Absolute and Relative Units": [
+                build_lesson("Choose CSS Units for Flexible Layouts", "css-practice-units", "<p><strong>Understand it:</strong> <code>px</code> is fixed, <code>rem</code> scales with the root font size, and percentages adapt to a parent. Relative units can make layouts more adaptable.</p><p><strong>Your task:</strong> use rem for text and a percentage for a card width.</p>", "body { font-size: 1rem; }\n.card { width: 90%; }", "", language="css", tests=[{"test": "code.includes('font-size') && /font-size\\s*:[^;]*rem/.test(code)", "message": "Use rem for the font size."}, {"test": "code.includes('.card') && code.includes('width') && code.includes('%')", "message": "Give the card a flexible percentage width."}], hints=["Set body font-size using rem.", "Create a .card rule.", "Try width: 90%;."]),
+            ],
+            "Pseudo Classes and Elements": [
+                build_lesson("Style Hover, Focus, and First Letters", "css-practice-pseudo-classes", "<p><strong>Understand it:</strong> pseudo-classes such as <code>:hover</code> and <code>:focus</code> style an element's state. Pseudo-elements such as <code>::first-letter</code> style part of an element. Keep keyboard focus visible.</p><p><strong>Your task:</strong> add hover, focus, and first-letter rules.</p>", "button:hover { color: #1d4ed8; }\nbutton:focus { outline: 3px solid #93c5fd; }\np::first-letter { font-weight: bold; }", "", language="css", tests=[{"test": "code.includes(':hover')", "message": "Add a hover state."}, {"test": "code.includes(':focus') && code.includes('outline')", "message": "Keep keyboard focus visible."}, {"test": "code.includes('::first-letter')", "message": "Style the first letter with a pseudo-element."}], hints=["Use :hover for pointer interaction.", "Use :focus and outline for keyboard users.", "Pseudo-elements use two colons."]),
+            ],
+            "Colors": [
+                build_lesson("Create a Readable Color Theme", "css-practice-colors", "<p><strong>Understand it:</strong> CSS supports named, hexadecimal, RGB, and HSL colors. <code>color</code> sets foreground text; <code>background-color</code> sets the surface. Strong contrast improves readability.</p><p><strong>Your task:</strong> give the page readable text and background colors, then set a distinct link color.</p>", "body { color: #172033; background-color: #f8fafc; }\na { color: #1d4ed8; }", "", language="css", tests=[{"test": "code.includes('color:')", "message": "Set a text color."}, {"test": "code.includes('background-color:')", "message": "Set a page background color."}, {"test": "code.includes('a') && code.includes('color')", "message": "Give links a distinct color."}], hints=["Use color for text.", "Use background-color for the surface.", "Add a separate a rule for links."]),
+            ],
+            "Styling Forms": [
+                build_lesson("Style Form Fields and Buttons", "css-practice-style-forms", "<p><strong>Understand it:</strong> comfortable padding, clear borders, and visible focus styles help make forms easier to use. Do not remove the keyboard focus indicator without replacing it.</p><p><strong>Your task:</strong> style an input and button and add a visible focus outline.</p>", "input { padding: 0.75rem; border: 1px solid #94a3b8; }\ninput:focus { outline: 3px solid #93c5fd; }\nbutton { background-color: #2563eb; color: white; }", "", language="css", tests=[{"test": "code.includes('input') && code.includes('border')", "message": "Give input fields a visible border."}, {"test": "code.includes('button') && code.includes('background-color')", "message": "Style the button background."}, {"test": "code.includes(':focus') && code.includes('outline')", "message": "Provide visible keyboard focus."}], hints=["Start with an input selector.", "Add a button rule.", "Include a focus rule with an outline."]),
+            ],
+            "Typography": [
+                build_lesson("Create a Readable Type Scale", "css-practice-typography", "<p><strong>Understand it:</strong> typography shapes readability. Use <code>font-family</code> to choose a typeface, <code>font-size</code> for hierarchy, and <code>line-height</code> for space between lines.</p><p><strong>Your task:</strong> choose a sans-serif font, enlarge the main heading, and improve paragraph line spacing.</p>", "body { font-family: Arial, sans-serif; }\nh1 { font-size: 2.5rem; }\np { line-height: 1.6; }", "", language="css", tests=[{"test": "code.includes('font-family')", "message": "Choose a font family."}, {"test": "code.includes('h1') && code.includes('font-size')", "message": "Set a heading size."}, {"test": "code.includes('line-height')", "message": "Set comfortable line spacing."}], hints=["Set font-family on body.", "Give h1 a font-size.", "Use line-height on paragraphs."]),
+            ],
+            "Accessibility": [
+                build_lesson("Accessible CSS: Focus, Contrast, and Motion", "css-practice-accessibility", "<p><strong>Understand it:</strong> CSS affects whether an interface is usable. Keep text contrast strong, provide a clear keyboard focus ring, and respect reduced-motion preferences.</p><p><strong>Your task:</strong> add a visible focus indicator and disable optional transitions when reduced motion is requested.</p>", "button:focus-visible { outline: 3px solid #2563eb; }\n@media (prefers-reduced-motion: reduce) {\n  .button { transition: none; }\n}", "", language="css", tests=[{"test": "code.includes(':focus') && code.includes('outline')", "message": "Provide visible keyboard focus."}, {"test": "code.includes('prefers-reduced-motion')", "message": "Respect the reduced-motion preference."}], hints=["Use :focus-visible for keyboard focus.", "Set a clear outline.", "Use a prefers-reduced-motion media query."]),
+            ],
+            "Positioning": [
+                build_lesson("Position a Badge on a Card", "css-practice-positioning", "<p><strong>Understand it:</strong> normal flow places elements in sequence. A relatively positioned parent becomes the reference point for an absolutely positioned child.</p><p><strong>Your task:</strong> make the card the positioning context, then place its badge in the top-right corner.</p>", ".card { position: relative; }\n.badge { position: absolute; top: 0; right: 0; }", "", language="css", tests=[{"test": "code.includes('.card') && code.includes('position: relative')", "message": "Make the card a positioning context."}, {"test": "code.includes('.badge') && code.includes('position: absolute')", "message": "Position the badge absolutely."}, {"test": "code.includes('top:') && code.includes('right:')", "message": "Place it at the top right."}], hints=["Set .card to position: relative.", "Set .badge to position: absolute.", "Use top: 0 and right: 0."]),
+            ],
+            "Attribute Selectors": [
+                build_lesson("Select Form Fields by Attribute", "css-practice-attribute-selectors", "<p><strong>Understand it:</strong> attribute selectors match elements by an HTML attribute. For example, <code>input[type=\"email\"]</code> selects email fields without requiring a special class.</p><p><strong>Your task:</strong> set a border color for email inputs.</p>", "input[type=\"email\"] { border-color: #2563eb; }", "", language="css", tests=[{"test": "code.includes('input[type=')", "message": "Use an attribute selector for email fields."}, {"test": "code.includes('border-color')", "message": "Set the field border color."}], hints=["Start with input[type=\"email\"].", "Add a declaration inside braces.", "Use border-color to change the border color."]),
+            ],
+            "Responsive Design": [
+                build_lesson("Make a Card Layout Responsive", "css-practice-responsive-layout", "<p><strong>Understand it:</strong> responsive design lets a layout adapt to available space. Media queries apply CSS only when a condition is true. A mobile-first layout can start with one column and add columns on wider screens.</p><p><strong>Your task:</strong> create one column by default and two columns at 700 pixels or wider.</p>", ".cards { display: grid; grid-template-columns: 1fr; gap: 1rem; }\n@media (min-width: 700px) { .cards { grid-template-columns: repeat(2, 1fr); } }", "", language="css", tests=[{"test": "code.includes('display: grid')", "message": "Use grid for the cards."}, {"test": "code.includes('@media') && code.includes('min-width')", "message": "Add a wider-screen media query."}, {"test": "code.includes('grid-template-columns')", "message": "Define responsive columns."}], hints=["Start with one column.", "Add @media (min-width: 700px).", "Inside the query, use two equal columns."]),
+            ],
+            "Variables": [
+                build_lesson("Reuse Values with CSS Custom Properties", "css-practice-custom-properties", "<p><strong>Understand it:</strong> custom properties store reusable values. Define a name beginning with <code>--</code> (often on <code>:root</code>) and retrieve it using <code>var(--name)</code>.</p><p><strong>Your task:</strong> define a color and spacing token, then reuse both in a card rule.</p>", ":root { --brand: #2563eb; --space: 1rem; }\n.card { color: var(--brand); padding: var(--space); }", "", language="css", tests=[{"test": "code.includes('--brand:')", "message": "Define a brand custom property."}, {"test": "code.includes('--space:')", "message": "Define a spacing custom property."}, {"test": "code.includes('var(--brand)') && code.includes('var(--space)')", "message": "Reuse the tokens with var()."}], hints=["Define variables inside :root.", "Names start with two hyphens.", "Read them with var(--brand) and var(--space)."]),
+            ],
+            "Animations": [
+                build_lesson("Add a Small, Respectful Transition", "css-practice-transitions", "<p><strong>Understand it:</strong> transitions smooth CSS changes between states. Choose the property and duration, then keep motion subtle. Respect people who request reduced motion.</p><p><strong>Your task:</strong> add a short button hover transition and disable it for reduced-motion users.</p>", ".button { transition: transform 180ms ease; }\n.button:hover { transform: translateY(-2px); }\n@media (prefers-reduced-motion: reduce) { .button { transition: none; } }", "", language="css", tests=[{"test": "code.includes('transition:')", "message": "Add a transition."}, {"test": "code.includes(':hover')", "message": "Create an interaction state."}, {"test": "code.includes('prefers-reduced-motion')", "message": "Respect reduced motion."}], hints=["Add transition to .button.", "Change a property on hover.", "Turn the transition off in a reduced-motion query."]),
+            ],
+        }
+        for module_title, lessons in css_extensions.items():
+            target_module = modules_by_title.get(module_title)
+            if target_module:
+                target_module["lessons"] = lessons + target_module["lessons"]
+
         course = Course.query.filter_by(slug=course_data["slug"]).first()
         if course is None:
             course = Course(
@@ -406,16 +656,46 @@ def seed():
                 "html-lists-ul-ol-li",
                 "html-semantic-page-structure",
             }
-            has_missing_starter_lessons = (
-                module_data["title"] == "Basic HTML"
-                and any(
-                    not Lesson.query.filter_by(module_id=module.id, slug=slug).first()
-                    for slug in starter_slugs
-                )
+            css_starter_slugs = {
+                "css-from-scratch-first-styles",
+                "css-selectors-elements-classes-ids",
+                "css-colors-and-contrast",
+                "css-units-pixels-rem-percentages",
+                "css-margin-and-padding",
+                "css-borders-width-box-model",
+                "css-typography-and-line-height",
+                "css-pseudo-classes-hover-focus",
+                "css-flexbox-first-layout",
+                "css-responsive-media-queries",
+                "css-style-links",
+                "css-style-hover-focus-states",
+                "css-card-backgrounds-and-borders",
+                "css-box-model-content-padding-border-margin",
+                "css-flexbox-align-items",
+                "css-grid-simple-columns",
+            }
+            module_intro_slugs = {
+                "Basic HTML": starter_slugs,
+                "Basic CSS": {slug for slug in css_starter_slugs if slug not in {
+                    "css-style-links", "css-style-hover-focus-states",
+                    "css-card-backgrounds-and-borders",
+                    "css-box-model-content-padding-border-margin",
+                    "css-flexbox-align-items", "css-grid-simple-columns"
+                }},
+                "Styling Lists and Links": {"css-style-links", "css-style-hover-focus-states"},
+                "Working with Backgrounds and Borders": {"css-card-backgrounds-and-borders"},
+                "The Box Model": {"css-box-model-content-padding-border-margin"},
+                "Flexbox": {"css-flexbox-align-items"},
+                "Grid": {"css-grid-simple-columns"},
+            }
+            introductory_slugs = module_intro_slugs.get(module_data["title"], set())
+            has_missing_starter_lessons = bool(introductory_slugs) and any(
+                not Lesson.query.filter_by(module_id=module.id, slug=slug).first()
+                for slug in introductory_slugs
             )
             if is_existing_module and has_missing_starter_lessons:
                 Lesson.query.filter_by(module_id=module.id).update(
-                    {Lesson.position: Lesson.position + len(starter_slugs)},
+                    {Lesson.position: Lesson.position + len(introductory_slugs)},
                     synchronize_session=False,
                 )
                 db.session.flush()
@@ -426,7 +706,7 @@ def seed():
             for lesson_index, lesson_data in enumerate(module_data["lessons"], 1):
                 if Lesson.query.filter_by(module_id=module.id, slug=lesson_data["slug"]).first():
                     continue
-                if lesson_data["slug"] in starter_slugs and starter_position is not None:
+                if lesson_data["slug"] in introductory_slugs and starter_position is not None:
                     lesson_position = lesson_index
                 else:
                     max_position = db.session.query(db.func.max(Lesson.position)).filter_by(module_id=module.id).scalar() or 0
@@ -445,6 +725,33 @@ def seed():
                         hints=lesson_data["hints"],
                     )
                 )
+            db.session.flush()
+
+        html_module = Module.query.filter_by(course_id=course.id, title="Basic HTML").first()
+        css_module = Module.query.filter_by(course_id=course.id, title="Basic CSS").first()
+        if html_module and css_module:
+            misplaced_lessons = Lesson.query.filter_by(module_id=html_module.id, language="css").all()
+            for old_lesson in misplaced_lessons:
+                existing_css_lesson = Lesson.query.filter_by(
+                    module_id=css_module.id,
+                    slug=old_lesson.slug,
+                ).first()
+                if existing_css_lesson:
+                    old_progress = LessonProgress.query.filter_by(lesson_id=old_lesson.id).all()
+                    for progress in old_progress:
+                        already_completed = LessonProgress.query.filter_by(
+                            user_id=progress.user_id,
+                            lesson_id=existing_css_lesson.id,
+                        ).first()
+                        if already_completed:
+                            db.session.delete(progress)
+                        else:
+                            progress.lesson_id = existing_css_lesson.id
+                    db.session.delete(old_lesson)
+                else:
+                    last_position = db.session.query(db.func.max(Lesson.position)).filter_by(module_id=css_module.id).scalar() or 0
+                    old_lesson.module_id = css_module.id
+                    old_lesson.position = last_position + 1
             db.session.flush()
 
     db.session.commit()

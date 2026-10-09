@@ -10,6 +10,8 @@ CodeForge is a practical learning platform for aspiring web developers, built by
 - User dashboard and lesson progress tracking
 - Beginner-friendly lessons with guided hints and examples
 - A step-by-step HTML-from-scratch path covering page structure, elements, headings, paragraphs, links, images, lists, and semantic HTML
+- A guided CSS course that teaches selectors, colors, units, spacing, typography, box model, interaction states, forms, Flexbox, Grid, responsiveness, variables, accessibility, positioning, and transitions
+- A taught CSS path covering selectors, colors, units, spacing, typography, the box model, interaction states, forms, Flexbox, Grid, responsive layouts, variables, accessibility, positioning, and transitions
 - Direct course-to-lesson start links and saved lesson progress
 - Search, blog, project, and challenge pages
 - SEO-friendly metadata and mobile-first layout
@@ -51,6 +53,8 @@ To recreate the local database and reload the seeded course content, run:
 ## Lesson progress
 
 Learners can preview a lesson without signing in. Sign in or create an account to save completion progress. After passing the lesson checks, choose **Complete and continue** to save progress and open the next lesson. The editor also supports Ctrl+Enter (or Cmd+Enter) to run the checks.
+
+Each lesson keeps the worked example separate from the blank learner editor. For CSS lessons, the preview contains sample HTML and updates as the learner writes styles in the CSS editor.
 
 New curriculum lessons are added automatically when the app starts. This update is additive and does not require deleting the database or existing learner progress.
 

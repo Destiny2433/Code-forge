@@ -45,10 +45,12 @@ document.querySelectorAll('.editor').forEach(editor => {
 
   const getCode = () => {
     if (isWeb) {
-      const html = document.getElementById('code-box-html')?.value || '';
+      const htmlEditor = document.getElementById('code-box-html');
+      const previewMarkup = document.getElementById('preview-html')?.value || '';
+      const html = htmlEditor?.value || previewMarkup;
       const cssEditor = document.getElementById('code-box-css');
       const css = cssEditor?.value || '';
-      const htmlCode = html || '<!DOCTYPE html><html><body><h1>CSS practice preview</h1></body></html>';
+      const htmlCode = html || '<!DOCTYPE html><html><body><h1>Practice preview</h1></body></html>';
       return { html: lang === 'css' ? css : html, css, full: `<style>${css}</style>\n${htmlCode}` };
     }
     return document.getElementById('code-box-main')?.value || '';

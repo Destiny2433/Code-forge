@@ -657,6 +657,54 @@ h2 {
   flex-direction: column;
 }
 
+.lesson-content {
+  gap: 14px;
+}
+
+.lesson-explanation {
+  max-width: 68ch;
+  font-size: 1rem !important;
+  line-height: 1.75 !important;
+}
+
+.lesson-explanation p {
+  margin: 0 0 14px;
+}
+
+.lesson-explanation strong {
+  color: var(--ink);
+}
+
+.lesson-explanation code {
+  padding: 2px 5px;
+  border-radius: 4px;
+  background: rgba(38, 119, 255, 0.1);
+  color: var(--blue);
+  font: 0.9em ui-monospace, monospace;
+}
+
+.editor-bar:first-child {
+  border-bottom: 1px solid #263b56;
+}
+
+.example-code {
+  min-height: 130px !important;
+  flex: 0 0 auto !important;
+  line-height: 1.65 !important;
+}
+
+.code-file {
+  min-height: 220px;
+  line-height: 1.7 !important;
+}
+
+.lesson-content .button:focus-visible,
+.editor :focus-visible,
+.lesson-layout ~ #ai-chatbot :focus-visible {
+  outline: 3px solid #93c5fd;
+  outline-offset: 2px;
+}
+
 .lesson-nav {
   display: none;
 }
@@ -1118,9 +1166,32 @@ footer b {
 @media (max-width: 950px) {
   .lesson-layout {
     grid-template-columns: 1fr;
-    grid-template-rows: auto 50vh 50vh;
+    grid-template-rows: auto minmax(360px, 55vh) minmax(300px, 45vh);
     height: auto;
     overflow: visible;
+  }
+  .lesson-content, .editor, .preview-pane {
+    min-height: 0;
+  }
+}
+
+@media (max-width: 600px) {
+  .lesson-layout {
+    gap: 12px;
+    padding: 12px;
+    grid-template-rows: auto minmax(320px, 48vh) minmax(260px, 40vh);
+  }
+
+  .lesson-content, .preview-pane {
+    padding: 16px;
+  }
+
+  .example-code {
+    min-height: 110px !important;
+  }
+
+  .code-file {
+    min-height: 180px;
   }
 }
 

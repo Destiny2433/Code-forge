@@ -16,6 +16,7 @@
 - [x] Landing page is branded and SEO-ready.
 - [x] Course pages are organized and easy to browse.
 - [x] Lesson flow has a direct first-lesson link, guided checks, and next-lesson navigation.
+- [x] Add a beginner-focused CSS learning path with a blank stylesheet editor and live preview.
 - [x] Certificate page presents a clean, professional achievement view.
 - [x] Render deployment settings and launch prep are documented.
 - [x] The experience feels like a modern coding academy without copying FreeCodeCamp branding or curriculum structure.
@@ -45,3 +46,4 @@ This project should continue to feel more like a premium learning product than a
 - [ ] Verify course/lesson routes, lesson checks, saved progress, and next-lesson navigation.
 - [x] Verify course and lesson rendering, lesson checks, and first-to-next navigation.
 - [ ] Verify saved completion status after returning to the curriculum.
+- [x] Verify the first CSS lesson loads and its code checks pass in the browser.
