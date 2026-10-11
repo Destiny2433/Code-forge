@@ -1,13 +1,27 @@
 from datetime import datetime
+import json
 import uuid
 from functools import wraps
-from flask import Blueprint, render_template, redirect, url_for, request, flash, jsonify, abort, current_app, make_response
+from flask import Blueprint, render_template, redirect, url_for, request, flash, jsonify, abort, current_app, make_response, send_from_directory
 from flask_login import login_user, logout_user, login_required, current_user
 from sqlalchemy import or_
-from . import db, limiter
-from .models import User, Course, Lesson, LessonProgress, Enrollment, Challenge, Project, Certificate, Article
+from . import db
+from .models import User, Course, Lesson, LessonProgress, LessonDraft, ExamAttempt, Enrollment, Challenge, Project, Certificate, Article
 
 bp = Blueprint("main", __name__)
+
+COURSE_EXAM = [
+    {"question": "What does HTML mainly describe?", "choices": ["The structure and meaning of page content", "The color of every button", "The server's password"], "answer": 0},
+    {"question": "Which tag creates the main page heading?", "choices": ["<p>", "<h1>", "<head>"], "answer": 1},
+    {"question": "Where does visible page content belong?", "choices": ["<body>", "<title>", "<meta>"], "answer": 0},
+    {"question": "Which attribute gives a link its destination?", "choices": ["src", "alt", "href"], "answer": 2},
+    {"question": "Why should a meaningful image have alt text?", "choices": ["It describes useful image content to people who cannot see it", "It makes the image download faster", "It changes the image color"], "answer": 0},
+    {"question": "Which list is best when order matters?", "choices": ["<ul>", "<ol>", "<div>"], "answer": 1},
+    {"question": "What does CSS primarily control?", "choices": ["The presentation and layout of content", "The meaning of every paragraph", "The browser's internet connection"], "answer": 0},
+    {"question": "In CSS, what does .card select?", "choices": ["An element with class=\"card\"", "An element with id=\"card\"", "Every card image file"], "answer": 0},
+    {"question": "Which property adds space inside an element's border?", "choices": ["margin", "padding", "outline"], "answer": 1},
+    {"question": "What does a CSS media query help a page do?", "choices": ["Adapt styles to conditions such as viewport width", "Create an HTML form", "Save a file to disk"], "answer": 0},
+]
 def admin_required(f):
     @wraps(f)
     def inner(*args, **kwargs):
@@ -28,7 +42,18 @@ def course(slug):
             progress.lesson_id
             for progress in LessonProgress.query.filter_by(user_id=current_user.id).all()
         }
-    return render_template("course.html", course=c, completed_lesson_ids=completed_lesson_ids)
+    lessons = c.lessons()
+    next_lesson = next((item for item in lessons if item.id not in completed_lesson_ids), lessons[0] if lessons else None)
+    if current_user.is_authenticated and completed_lesson_ids:
+        next_lesson = next((item for item in lessons if item.id not in completed_lesson_ids), next_lesson)
+        if all(item.id in completed_lesson_ids for item in lessons):
+            next_lesson = lessons[-1] if lessons else None
+    passed_exam = current_user.is_authenticated and ExamAttempt.query.filter_by(user_id=current_user.id, course_id=c.id, passed=True).first() is not None
+    existing_certificate = Certificate.query.filter_by(user_id=current_user.id, course_id=c.id).first() if current_user.is_authenticated else None
+    response = make_response(render_template("course.html", course=c, modules=c.learning_modules(), completed_lesson_ids=completed_lesson_ids, next_lesson=next_lesson, passed_exam=passed_exam, existing_certificate=existing_certificate))
+    if current_user.is_authenticated:
+        response.headers["Cache-Control"] = "private, no-store"
+    return response
 @bp.post("/courses/<slug>/enroll")
 @login_required
 def enroll(slug):
@@ -38,9 +63,58 @@ def enroll(slug):
 @bp.route("/courses/<course_slug>/<lesson_slug>")
 def lesson(course_slug, lesson_slug):
     c = Course.query.filter_by(slug=course_slug).first_or_404()
-    l = next((x for x in c.lessons() if x.slug == lesson_slug), None)
+    all_lessons = c.lessons()
+    l = next((x for x in all_lessons if x.slug == lesson_slug), None)
     if not l: abort(404)
-    return render_template("lesson.html", course=c, lesson=l, lessons=c.lessons())
+    saved_draft = None
+    completed_lesson_ids = set()
+    if current_user.is_authenticated:
+        draft = LessonDraft.query.filter_by(user_id=current_user.id, lesson_id=l.id).first()
+        if draft:
+            try:
+                saved_draft = json.loads(draft.code_json)
+            except (TypeError, ValueError):
+                saved_draft = None
+        completed_lesson_ids = {
+            p.lesson_id for p in LessonProgress.query.filter_by(user_id=current_user.id).all()
+        }
+    lesson_index = next((i for i, x in enumerate(all_lessons) if x.id == l.id), 0)
+    total_lessons = len(all_lessons)
+    prev_lesson = all_lessons[lesson_index - 1] if lesson_index > 0 else None
+    next_lesson = all_lessons[lesson_index + 1] if lesson_index + 1 < total_lessons else None
+    response = make_response(render_template(
+        "lesson.html",
+        course=c,
+        lesson=l,
+        lessons=all_lessons,
+        saved_draft=saved_draft,
+        completed_lesson_ids=completed_lesson_ids,
+        lesson_index=lesson_index,
+        total_lessons=total_lessons,
+        prev_lesson=prev_lesson,
+        next_lesson=next_lesson,
+    ))
+    if current_user.is_authenticated:
+        response.headers["Cache-Control"] = "private, no-store"
+    return response
+
+@bp.post("/api/lessons/<int:lesson_id>/draft")
+@login_required
+def save_lesson_draft(lesson_id):
+    lesson = db.session.get(Lesson, lesson_id) or abort(404)
+    payload = request.get_json(silent=True) or {}
+    draft = payload.get("draft")
+    if not isinstance(draft, dict) or any(not isinstance(value, str) for value in draft.values()):
+        return jsonify(ok=False, error="invalid_draft"), 400
+    if len(json.dumps(draft)) > 100_000:
+        return jsonify(ok=False, error="draft_too_large"), 413
+    saved = LessonDraft.query.filter_by(user_id=current_user.id, lesson_id=lesson.id).first()
+    if saved is None:
+        saved = LessonDraft(user_id=current_user.id, lesson_id=lesson.id)
+        db.session.add(saved)
+    saved.code_json = json.dumps(draft)
+    db.session.commit()
+    return jsonify(ok=True)
 @bp.post("/api/lessons/<int:lesson_id>/complete")
 def complete_lesson(lesson_id):
     if not current_user.is_authenticated:
@@ -106,10 +180,39 @@ def update_profile():
 @login_required
 def certificate(slug):
     c = Course.query.filter_by(slug=slug).first_or_404()
-    if c.progress_for(current_user) < 100: flash("Complete every lesson before claiming your certificate.", "error"); return redirect(url_for("main.course", slug=slug))
+    lessons = c.lessons()
+    completed_ids = {
+        progress.lesson_id
+        for progress in LessonProgress.query.filter_by(user_id=current_user.id).all()
+    }
+    if not lessons or any(lesson.id not in completed_ids for lesson in lessons):
+        flash("Complete every lesson before claiming your certificate.", "error")
+        return redirect(url_for("main.course", slug=slug))
+    if not ExamAttempt.query.filter_by(user_id=current_user.id, course_id=c.id, passed=True).first():
+        flash("Pass the final course exam before claiming your certificate.", "error")
+        return redirect(url_for("main.exam", slug=slug))
     cert = Certificate.query.filter_by(user_id=current_user.id, course_id=c.id).first()
     if not cert: cert = Certificate(certificate_id=f"CFA-{datetime.utcnow():%Y}-{uuid.uuid4().hex[:6].upper()}", user=current_user, course=c); db.session.add(cert); db.session.commit()
     return redirect(url_for("main.verify", certificate_id=cert.certificate_id))
+
+@bp.route("/courses/<slug>/exam", methods=["GET", "POST"])
+@login_required
+def exam(slug):
+    c = Course.query.filter_by(slug=slug, published=True).first_or_404()
+    lessons = c.lessons()
+    completed_ids = {p.lesson_id for p in LessonProgress.query.filter_by(user_id=current_user.id).all()}
+    if not lessons or any(item.id not in completed_ids for item in lessons):
+        flash("Finish every course lesson before taking the final exam.", "error")
+        return redirect(url_for("main.course", slug=slug))
+    result = None
+    if request.method == "POST":
+        score = sum(1 for index, item in enumerate(COURSE_EXAM, 1) if request.form.get(f"q{index}") == str(item["answer"]))
+        percent = round(score / len(COURSE_EXAM) * 100)
+        passed = percent >= 70
+        db.session.add(ExamAttempt(user_id=current_user.id, course_id=c.id, score=percent, passed=passed))
+        db.session.commit()
+        result = {"score": percent, "passed": passed}
+    return render_template("exam.html", course=c, questions=COURSE_EXAM, result=result)
 @bp.route("/verify/<certificate_id>")
 def verify(certificate_id): return render_template("verify.html", certificate=Certificate.query.filter_by(certificate_id=certificate_id).first_or_404())
 @bp.route("/blog")
@@ -122,7 +225,6 @@ def search():
     if q: results = [("Course", x.title, url_for("main.course", slug=x.slug), x.description) for x in Course.query.filter(Course.title.ilike(f"%{q}%")).all()] + [("Article", x.title, url_for("main.article", slug=x.slug), x.excerpt) for x in Article.query.filter(Article.title.ilike(f"%{q}%")).all()]
     return render_template("search.html", q=q, results=results)
 @bp.route("/login", methods=["GET", "POST"])
-@limiter.limit("10 per minute")
 def login():
     if request.method == "POST":
         user=User.query.filter_by(email=request.form.get("email", "").lower()).first()
@@ -130,7 +232,6 @@ def login():
         flash("Invalid email or password.", "error")
     return render_template("auth.html", mode="login")
 @bp.route("/register", methods=["GET", "POST"])
-@limiter.limit("5 per minute")
 def register():
     if request.method == "POST":
         name=request.form.get("name", "").strip(); email=request.form.get("email", "").lower().strip(); password=request.form.get("password", "")
@@ -157,6 +258,16 @@ def api_course(slug):
 @bp.route("/cookies")
 def pages(): return render_template("page.html", page=request.path.strip("/") or "about")
 @bp.route("/robots.txt")
-def robots(): return make_response("User-agent: *\nAllow: /\nDisallow: /dashboard\nDisallow: /admin\nSitemap: /sitemap.xml\n", 200, {"Content-Type":"text/plain"})
+def robots(): return make_response(f"User-agent: *\nAllow: /\nDisallow: /dashboard\nDisallow: /admin\nSitemap: {request.url_root}sitemap.xml\n", 200, {"Content-Type":"text/plain"})
+@bp.get("/sw.js")
+def service_worker():
+    response = make_response(send_from_directory(current_app.static_folder, "sw.js"))
+    response.headers["Content-Type"] = "application/javascript; charset=utf-8"
+    response.headers["Service-Worker-Allowed"] = "/"
+    response.headers["Cache-Control"] = "no-cache"
+    return response
+@bp.get("/offline")
+def offline_page():
+    return send_from_directory(current_app.static_folder, "offline.html")
 @bp.route("/sitemap.xml")
-def sitemap(): return current_app.response_class(render_template("sitemap.xml", courses=Course.query.all(), articles=Article.query.all()), mimetype="application/xml")
+def sitemap(): return current_app.response_class(render_template("sitemap.xml", courses=Course.query.filter_by(published=True).all(), articles=Article.query.all()), mimetype="application/xml")

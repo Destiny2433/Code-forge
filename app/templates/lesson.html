@@ -1,107 +1,214 @@
-{% extends 'base.html' %}
-{% block title %}{{ lesson.title }} · {{ course.title }}{% endblock %}
-{% block content %}
-<div class="lesson-layout" style="position: relative;">
-  <!-- Data injected for app.js -->
-  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-  <script id="lesson-tests" type="application/json">{{ lesson.tests | safe }}</script>
-  <script id="lesson-hints" type="application/json">{{ lesson.hints | safe }}</script>
+{% extends 'lesson_base.html' %}
+{% block title %}{{ lesson.title }} · {{ course.title }} · CodeForge{% endblock %}
+{% block meta_description %}{{ lesson.title }}: {{ lesson.body|striptags|truncate(155, True, '…') }}{% endblock %}
 
-  <!-- Pane 1: Instructions & Tests -->
-  <article class="lesson-content">
-    <a href="{{ url_for('main.course',slug=course.slug) }}" style="color:var(--muted); font-size: 13px; text-decoration: underline; margin-bottom: 10px;">← Back to {{ course.title }}</a>
-    <p class="eyebrow" style="margin-top:0;">LESSON</p>
-    <h1 style="font-size: 24px;">{{ lesson.title }}</h1>
-    <div class="lesson-explanation" style="font-size: 15px; line-height: 1.6; color: var(--ink);">
-      {{ lesson.body|safe }}
-      {% if lesson.language == 'css' %}
-        <p class="note"><strong>How to practice:</strong> edit the code in styles.css. The sample page in the preview is already written for you; your CSS styles it as you type. Select “Check Your Code” when your changes are ready.</p>
+{# ── Slim header blocks ── #}
+{% block lesson_back %}
+  <a class="lesson-back-link" href="{{ url_for('main.course', slug=course.slug) }}">
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9,2 4,7 9,12"/></svg>
+    {{ course.title }}
+  </a>
+{% endblock %}
+
+{% block step_counter %}
+  <span class="step-counter">
+    Step <strong>{{ lesson_index + 1 }}</strong> of <strong>{{ total_lessons }}</strong>
+  </span>
+  <div class="step-pill-bar" aria-hidden="true">
+    {% for l in lessons %}
+      <span class="step-pill {% if l.id == lesson.id %}active{% elif l.id in completed_lesson_ids %}done{% endif %}"></span>
+    {% endfor %}
+  </div>
+{% endblock %}
+
+{% block content %}
+{# ── Data injected for app.js ── #}
+<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+<script id="lesson-tests"  type="application/json">{{ lesson.tests  | safe }}</script>
+<script id="lesson-hints"  type="application/json">{{ lesson.hints  | safe }}</script>
+<script id="lesson-saved-draft" type="application/json">{{ saved_draft | tojson }}</script>
+<script id="lesson-meta" type="application/json">{{ {"lessonId": lesson.id, "nextUrl": url_for('main.lesson', course_slug=course.slug, lesson_slug=next_lesson.slug) if next_lesson else url_for('main.course', slug=course.slug)} | tojson }}</script>
+
+<div class="lesson-shell {% if not prev_lesson and not next_lesson %}no-nav{% endif %}" id="lesson-shell">
+
+  {# ══════════════════════════════════════════════════════
+     SIDEBAR — Step List
+     ══════════════════════════════════════════════════════ #}
+  <aside class="lesson-sidebar" id="lesson-sidebar" aria-label="Course steps">
+    <div class="sidebar-header">
+      <span class="sidebar-course-title">{{ course.title }}</span>
+      <span class="sidebar-progress-label">{{ lessons|selectattr('id', 'in', completed_lesson_ids)|list|length }}/{{ total_lessons }} complete</span>
+    </div>
+    <div class="sidebar-progress-bar">
+      <div class="sidebar-progress-fill" style="width: {{ ((lessons|selectattr('id', 'in', completed_lesson_ids)|list|length) / total_lessons * 100)|round|int if total_lessons else 0 }}%"></div>
+    </div>
+    <nav class="sidebar-steps" aria-label="Lesson steps">
+      {% for l in lessons %}
+        <a href="{{ url_for('main.lesson', course_slug=course.slug, lesson_slug=l.slug) }}"
+           class="sidebar-step {% if l.id == lesson.id %}current{% elif l.id in completed_lesson_ids %}completed{% endif %}"
+           {% if l.id == lesson.id %}aria-current="step"{% endif %}>
+          <span class="sidebar-step-icon">
+            {% if l.id in completed_lesson_ids %}
+              <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="#10b981" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="2,7 5,10 11,3"/></svg>
+            {% elif l.id == lesson.id %}
+              <svg width="10" height="10" viewBox="0 0 10 10" fill="#3b82f6"><circle cx="5" cy="5" r="4"/></svg>
+            {% else %}
+              <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="#64748b" stroke-width="1.8"><circle cx="5" cy="5" r="4"/></svg>
+            {% endif %}
+          </span>
+          <span class="sidebar-step-title">{{ l.title }}</span>
+        </a>
+      {% endfor %}
+    </nav>
+  </aside>
+  <button class="sidebar-scrim" id="sidebar-scrim" type="button" aria-label="Close course steps"></button>
+
+  {# ══════════════════════════════════════════════════════
+     PANE 1 — Instructions & Tests
+     ══════════════════════════════════════════════════════ #}
+  <article class="lesson-content" id="lesson-content-pane">
+
+    <div class="lesson-content-scroll">
+      {# Step label #}
+      <p class="lesson-eyebrow">Step {{ lesson_index + 1 }} <span>of {{ total_lessons }}</span></p>
+      <h1 class="lesson-title">{{ lesson.title }}</h1>
+
+      {# Lesson body #}
+      <div class="lesson-explanation">
+        {{ lesson.body | safe }}
+      </div>
+
+      {# Example code block (read-only reference) #}
+      {% if lesson.example_code %}
+        <div class="lesson-example">
+          <p class="lesson-example-label">Example</p>
+          <pre class="lesson-example-code"><code>{{ lesson.example_code | e }}</code></pre>
+        </div>
       {% endif %}
     </div>
 
-    <!-- Test Results Panel -->
-    <div class="test-results" style="display:none; margin-top: auto;" id="test-results">
-      <h3 style="margin-top:0; font-size:16px;">Tests</h3>
-      <ul id="test-list" style="list-style:none; padding:0; margin:0; font-size:14px;"></ul>
+    {# ── Test Results — always rendered ── #}
+    <section class="test-panel" id="test-results" aria-live="polite" aria-label="Test results">
+      <div class="test-panel-inner" id="test-list">
+        <p class="test-panel-placeholder">Run the tests to see your results.</p>
+      </div>
+    </section>
+
+    {# ── Action Row ── #}
+    <div class="lesson-actions">
+      <button class="run-tests-btn complete" id="run-tests-btn" data-lesson="{{ lesson.id }}">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="3,2 13,8 3,14"/></svg>
+        Run the Tests
+      </button>
+      <button class="submit-btn" id="next-lesson-btn" data-lesson="{{ lesson.id }}" style="display:none">
+        Submit and go to next step
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="5,2 10,7 5,12"/></svg>
+      </button>
     </div>
-    
-    <div style="display: flex; gap: 10px; margin-top: auto;">
-      <button class="button complete" data-lesson="{{ lesson.id }}" style="flex-grow: 1;">Check Your Code</button>
-      <button class="button" id="next-lesson-btn" data-lesson="{{ lesson.id }}" style="display:none; background: #10b981;">Complete and continue</button>
-    </div>
+
+    {# ── Prev / Next nav ── #}
+    <nav class="lesson-nav-row" aria-label="Step navigation">
+      {% if prev_lesson %}
+        <a class="lesson-nav-btn prev" href="{{ url_for('main.lesson', course_slug=course.slug, lesson_slug=prev_lesson.slug) }}">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9,2 4,7 9,12"/></svg>
+          Previous
+        </a>
+      {% else %}
+        <span class="lesson-nav-btn prev disabled">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9,2 4,7 9,12"/></svg>
+          Previous
+        </span>
+      {% endif %}
+
+      <a class="lesson-nav-course-link" href="{{ url_for('main.course', slug=course.slug) }}">Course map</a>
+
+      {% if next_lesson %}
+        <a class="lesson-nav-btn next" href="{{ url_for('main.lesson', course_slug=course.slug, lesson_slug=next_lesson.slug) }}">
+          Next
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="5,2 10,7 5,12"/></svg>
+        </a>
+      {% else %}
+        <a class="lesson-nav-btn next" href="{{ url_for('main.course', slug=course.slug) }}">
+          Finish course
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="5,2 10,7 5,12"/></svg>
+        </a>
+      {% endif %}
+    </nav>
+
   </article>
 
-  <!-- Pane 2: Editor (Teaching Flow) -->
-  <div class="editor" data-language="{{ lesson.language }}" data-course="{{ course.slug }}" id="editor-container" style="display: flex; flex-direction: column;">
-    
-    <!-- AI Teaching Example Code -->
-    <div class="editor-bar" style="background: rgba(38,119,255,0.1); color: var(--blue);">
-      <span>{% if lesson.language == 'css' %}🎨 CSS Example — Study the rule, then style the preview below{% else %}💡 Lesson Example — Study this code, then try it below{% endif %}</span>
-    </div>
-    <textarea class="example-code" spellcheck="false" readonly style="flex-grow: 0; min-height: 100px; background: rgba(0,0,0,0.02); color: #69d9a2; width: 100%; border: 0; padding: 18px; font: 14px/1.6 ui-monospace, monospace; resize: none; outline: 0;">{{ lesson.example_code }}</textarea>
+  {# ══════════════════════════════════════════════════════
+     PANE 2 — Code Editor
+     ══════════════════════════════════════════════════════ #}
+  <div class="editor"
+       data-language="{{ lesson.language }}"
+       data-course="{{ course.slug }}"
+       data-draft-key="{{ course.slug }}:{{ lesson.slug }}"
+       data-save-draft-url="{{ url_for('main.save_lesson_draft', lesson_id=lesson.id) if current_user.is_authenticated else '' }}"
+       id="editor-container">
 
-    <!-- User's Code Input -->
-    <div class="editor-bar" style="margin-top: 10px;">
-      <span>{% if lesson.language == 'css' %}Your CSS{% else %}Your Code{% endif %}</span>
-      <button class="reset">Reset</button>
+    <div class="editor-bar">
+      <span>{% if lesson.language == 'css' %}styles.css{% else %}index.html{% endif %}</span>
+      <span id="draft-status" class="draft-status" aria-live="polite">Drafts save automatically</span>
+      <button class="reset" title="Reset code">↺ Reset</button>
     </div>
+
     {% if course.slug in ['html-css', 'responsive-web-design'] and lesson.language == 'html' %}
       <div class="file-tabs">
         <button class="file-tab active" data-file="html">index.html</button>
         <button class="file-tab" data-file="css">styles.css</button>
       </div>
-      <textarea class="code-file active" data-file="html" spellcheck="false" id="code-box-html"></textarea>
-      <textarea class="code-file" data-file="css" spellcheck="false" id="code-box-css"></textarea>
+      <textarea class="code-file active" data-file="html" spellcheck="false" id="code-box-html" placeholder="Type your HTML here…"></textarea>
+      <textarea class="code-file" data-file="css" spellcheck="false" id="code-box-css" placeholder="Type your CSS here…"></textarea>
     {% else %}
       {% if lesson.language == 'css' %}
         <div class="file-tabs">
           <button class="file-tab active" data-file="css">styles.css</button>
         </div>
-        <textarea class="code-file active" data-file="css" spellcheck="false" id="code-box-css"></textarea>
+        <textarea class="code-file active" data-file="css" spellcheck="false" id="code-box-css" placeholder="Type your CSS here…"></textarea>
       {% else %}
-      <textarea class="code-file active" data-file="code" spellcheck="false" id="code-box-main"></textarea>
+        <textarea class="code-file active" data-file="code" spellcheck="false" id="code-box-main" placeholder="Type your code here…"></textarea>
       {% endif %}
     {% endif %}
   </div>
 
-  <!-- Pane 3: Preview/Console -->
-  <div class="preview-pane">
-    <div class="preview-bar" style="display:flex; justify-content:space-between; align-items:center;">
-      <span>{% if course.slug in ['html-css', 'responsive-web-design'] %}{% if lesson.language == 'css' %}Styled Result{% else %}Live Preview{% endif %}{% else %}Console Output{% endif %}</span>
+  {# ══════════════════════════════════════════════════════
+     PANE 3 — Live Preview
+     ══════════════════════════════════════════════════════ #}
+  <div class="preview-pane" id="preview-pane">
+    <div class="preview-bar">
+      <span class="preview-bar-dot red"></span>
+      <span class="preview-bar-dot amber"></span>
+      <span class="preview-bar-dot green"></span>
+      <span class="preview-bar-label">{% if lesson.language == 'css' %}CSS Preview{% else %}HTML Preview{% endif %}</span>
     </div>
+
     {% if course.slug in ['html-css', 'responsive-web-design'] and lesson.language in ['html', 'css'] %}
-      <iframe class="preview-frame" id="live-preview" title="Your live webpage preview" sandbox="allow-scripts allow-modals"></iframe>
+      <iframe class="preview-frame" id="live-preview" title="Live webpage preview" sandbox="allow-scripts allow-modals"></iframe>
       {% if lesson.language == 'css' %}
         <textarea id="preview-html" hidden><main class="card"><h1>Style this page</h1><p>Edit the CSS to change this text and card.</p><a href="#practice">Try a link</a></main></textarea>
       {% endif %}
       <pre class="output" aria-live="polite" style="display:none;" id="console-output"></pre>
     {% else %}
-      <pre class="output" aria-live="polite" id="console-output" style="flex-grow:1;">Ready for execution. Click "Check Your Code" to run your program.</pre>
+      <pre class="output" aria-live="polite" id="console-output" style="flex-grow:1;">Type HTML and see the page update here.</pre>
     {% endif %}
   </div>
 
-  <!-- AI Chatbot Floating Widget -->
-  <div id="ai-chatbot" style="position: fixed; bottom: 20px; right: 20px; width: 300px; background: var(--card-bg); border: 1px solid var(--blue); border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); display: flex; flex-direction: column; overflow: hidden; z-index: 100;">
-    <div id="ai-chat-header" style="background: var(--blue); color: #fff; padding: 10px 15px; font-weight: bold; cursor: pointer; display: flex; justify-content: space-between;">
-      <span>🤖 HiveryTech Tutor AI</span>
-      <span id="ai-chat-toggle">+</span>
-    </div>
-    <div id="ai-chat-body" style="padding: 15px; height: 250px; overflow-y: auto; display: none; flex-direction: column; gap: 10px; background: var(--paper);">
-      <div class="ai-msg" style="background: rgba(38,119,255,0.1); padding: 10px; border-radius: 8px; font-size: 13px; color: var(--ink);">
-        Hi! I'm your AI teaching assistant. I'm here to help you understand this lesson. Click "Get a Hint" if you are stuck!
-      </div>
-    </div>
-    <div id="ai-chat-controls" style="padding: 10px; border-top: 1px solid var(--line); background: var(--card-bg); display: none;">
-      <button id="ai-hint-btn" class="button small" style="width: 100%;">Get a Hint 💡</button>
-    </div>
+</div>{# /lesson-shell #}
+
+{# Hint panel — floating, collapsible #}
+<div id="hint-panel" class="hint-panel" aria-live="polite" hidden>
+  <div class="hint-panel-header">
+    <span>💡 Hint</span>
+    <button class="hint-panel-close" id="hint-close-btn" aria-label="Close hint">✕</button>
   </div>
+  <div class="hint-panel-body" id="hint-text"></div>
+  <button class="hint-next-btn" id="hint-next-btn">Next hint</button>
 </div>
+<button class="hint-fab" id="hint-fab-btn" title="Get a hint">💡</button>
 
-<!-- Load Pyodide for Python testing -->
 {% if lesson.language == 'python' %}
-<script src="https://cdn.jsdelivr.net/pyodide/v0.24.1/full/pyodide.js"></script>
+  <script src="https://cdn.jsdelivr.net/pyodide/v0.24.1/full/pyodide.js"></script>
 {% endif %}
-
-<!-- Confetti script -->
 <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 {% endblock %}

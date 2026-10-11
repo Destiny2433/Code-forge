@@ -1,11 +1,26 @@
 import json
 import os
+import re
 
 from . import db
 from .models import Course, Lesson, LessonProgress, Module, User
+from .beginner_curriculum import modules as beginner_modules
 
 
-def build_lesson(title, slug, body, example_code, code, language="html", tests=None, hints=None):
+def build_lesson(title, slug, body, *lesson_parts, language="html", tests=None, hints=None):
+    # Older CSS seed entries supplied a separate detailed explanation before
+    # the example and starter code. Accept that format while keeping new lessons clear.
+    if len(lesson_parts) == 2:
+        example_code, code = lesson_parts
+    elif len(lesson_parts) == 3 and lesson_parts[2] in {"html", "css", "python", "javascript"}:
+        example_code, code, language = lesson_parts
+    elif len(lesson_parts) == 3:
+        detailed_body, example_code, code = lesson_parts
+        body = f"{body}{detailed_body}"
+    else:
+        raise ValueError(f"Expected example and starter code for lesson {slug!r}")
+    if language == "html" and re.match(r"^(?:@media\b|:root\b|[.#a-zA-Z][^{\n]*\{)", example_code.lstrip()) and "<" not in example_code.split("\n", 1)[0]:
+        language = "css"
     return {
         "title": title,
         "slug": slug,
@@ -39,6 +54,7 @@ def seed():
                             "HTML from Scratch: Your First Webpage",
                             "html-from-scratch-your-first-webpage",
                             "<p><strong>What you will learn:</strong> HTML is the language browsers use to understand webpage content. It is like the labeled frame of a house: HTML says what is a heading, paragraph, image, or link; CSS decorates it later.</p><p><strong>Why it matters:</strong> clear HTML makes a page understandable to browsers, search engines, and assistive technology. HTML is not a programming language; it describes the structure and meaning of content.</p><p><strong>Your task:</strong> make a tiny page with a main heading and a paragraph. The browser preview on the right updates as you type.</p>",
+                                "<h2>1. The idea</h2><p>HTML (HyperText Markup Language) labels the meaning and structure of a webpage. Think of a page as a house: HTML is its rooms and signposts, CSS is its paint and furniture, and JavaScript can add behavior. HTML is markup, not a programming language: tags describe content rather than calculate a result.</p><h2>2. Read the document from the outside in</h2><p><code>&lt;!DOCTYPE html&gt;</code> tells the browser to use modern HTML. The <code>&lt;html lang=\"en\"&gt;</code> element wraps the document. The <code>&lt;head&gt;</code> holds page information such as its title and character encoding; the <code>&lt;body&gt;</code> holds the content people see. A browser parses these instructions and builds a document tree.</p><h2>3. Read one element</h2><p>In <code>&lt;h1&gt;My first page&lt;/h1&gt;</code>, <code>&lt;h1&gt;</code> opens the main heading, the words are its content, and <code>&lt;/h1&gt;</code> closes it. Indentation is for people reading the source; tags determine the structure. Most elements need both opening and closing tags.</p><h2>4. Follow the steps</h2><ol><li>Keep the doctype and document skeleton.</li><li>Put the page's one main heading inside <code>&lt;body&gt;</code>.</li><li>Add a complete paragraph beneath the heading.</li><li>Read the preview, then check that both elements have matching closing tags.</li></ol><p><strong>Common mistake:</strong> placing visible content in <code>&lt;head&gt;</code>, or forgetting the paragraph's closing tag. Clear HTML helps browsers, search engines, and assistive technology understand the page.</p>",
                             "<!DOCTYPE html>\n<html lang=\"en\">\n  <head>\n    <meta charset=\"UTF-8\">\n    <title>My First Page</title>\n  </head>\n  <body>\n    <h1>Hello, web!</h1>\n    <p>I am learning HTML.</p>\n  </body>\n</html>",
                             "<!DOCTYPE html>\n<html lang=\"en\">\n  <head>\n    <meta charset=\"UTF-8\">\n    <title>My First Page</title>\n  </head>\n  <body>\n    <h1>My first page</h1>\n  </body>\n</html>",
                             tests=[
@@ -52,6 +68,7 @@ def seed():
                                         "CSS from Scratch: Style Your First Page",
                                         "css-from-scratch-first-styles",
                                         "<p><strong>What CSS does:</strong> HTML describes what content is; CSS describes how it looks. A CSS rule has a selector (what to style) and declarations (which visual changes to make).</p><p><strong>Read this rule:</strong> in <code>p { color: navy; }</code>, <code>p</code> selects every paragraph and <code>color: navy</code> changes its text color. The braces hold the declarations, and each declaration ends with a semicolon.</p><p><strong>Your task:</strong> select the page body and set a readable font. Then give the heading a color. Use the styles.css editor tab.</p>",
+                                            "<h2>1. What CSS does</h2><p>CSS (Cascading Style Sheets) controls presentation: color, type, spacing, borders, and layout. HTML gives a paragraph its meaning; CSS decides how that paragraph is displayed. In this lesson, the sample HTML is already connected to the CSS editor, so you can focus on styling.</p><h2>2. Understand the rule</h2><p>Read <code>p { color: navy; }</code> from left to right. <code>p</code> is the selector (which elements to match). The braces contain declarations. <code>color</code> is a property (what aspect to change); <code>navy</code> is its value. A colon separates property and value; a semicolon ends the declaration. A rule can contain several declarations.</p><h2>3. Watch the live result</h2><p>Type a rule into <code>styles.css</code>. The browser applies valid CSS immediately. Try changing the value and observe which part of the preview changes. This feedback loop—edit, observe, adjust—is how developers learn to reason about styles.</p><h2>4. Build it in small steps</h2><ol><li>Write the <code>body</code> selector and opening/closing braces.</li><li>Inside the rule, set a readable <code>font-family</code> and end it with a semicolon.</li><li>Start a separate <code>h1</code> rule.</li><li>Set the heading's <code>color</code>, then confirm both rules appear in the preview.</li></ol><p><strong>Common errors:</strong> forgetting braces, using a comma instead of a colon, misspelling a property, or omitting a semicolon before the next declaration. CSS ignores an invalid declaration but can still apply the rest of the rule.</p><p><strong>Big picture:</strong> the “cascade” is how the browser resolves competing rules. For now, make one clear rule per target. Later you will learn how selector specificity, source order, inheritance, and layers affect which value wins.</p>",
                                         "body {\n  font-family: Arial, sans-serif;\n}\n\nh1 {\n  color: #2563eb;\n}",
                                         "body {\n  font-family: Arial, sans-serif;\n}\n",
                                         language="css",
@@ -66,6 +83,7 @@ def seed():
                                         "CSS Selectors: Choose What to Style",
                                         "css-selectors-elements-classes-ids",
                                         "<p><strong>Understand it:</strong> a selector chooses which HTML elements receive a rule. A type selector like <code>p</code> selects all paragraphs. A class selector starts with a dot, like <code>.card</code>, and can be reused. An ID selector starts with <code>#</code> and is intended for one unique element.</p><p>In <code>&lt;article class=\"card\"&gt;</code>, the matching selector is <code>.card</code>. Class names do not include the dot in HTML; the dot is only CSS selector syntax.</p><p><strong>Your task:</strong> style every paragraph, then create a reusable .card rule.</p>",
+                                            "<h2>Three useful selector types</h2><p>A selector is the pattern before a rule's braces. A type selector such as <code>p</code> matches every paragraph. A class selector such as <code>.card</code> matches any element whose HTML has <code>class=\"card\"</code>; classes are reusable. An ID selector such as <code>#notice</code> matches an element with <code>id=\"notice\"</code>; IDs should be unique within a page.</p><p><strong>Important distinction:</strong> the dot and hash belong in the CSS selector, not the HTML attribute. Write <code>&lt;article class=\"card\"&gt;</code> in HTML and <code>.card { ... }</code> in CSS.</p><h2>Choose the narrowest useful match</h2><p>Use a type selector for a consistent baseline, a class for a reusable design pattern, and an ID for a unique page element. Avoid styling everything with IDs: they are less reusable and make later overrides harder.</p><h2>Practice sequence</h2><ol><li>Use <code>p</code> to set readable paragraph text.</li><li>Create a separate <code>.card</code> rule.</li><li>Give cards a background color and check the live preview.</li><li>Change the HTML class mentally: would the selector still match? That question helps you debug selector typos.</li></ol><p><strong>Common errors:</strong> forgetting the dot before a class, using a class name that does not match the HTML exactly, or trying to select a class with <code>#</code>.</p>",
                                         "p {\n  color: #334155;\n}\n\n.card {\n  background-color: #eff6ff;\n}",
                                         "p {\n  color: #334155;\n}\n",
                                         language="css",
@@ -79,7 +97,7 @@ def seed():
                                     build_lesson(
                                         "CSS Colors and Readable Contrast",
                                         "css-colors-and-contrast",
-                                        "<p><strong>Understand it:</strong> CSS colors can use names, hexadecimal values such as <code>#1d4ed8</code>, or RGB values. Use <code>color</code> for text and <code>background-color</code> for the element's background.</p><p><strong>Accessibility tip:</strong> text needs enough contrast against its background to be readable. Avoid pale text on a pale background.</p><p><strong>Your task:</strong> give the page a light background and set the text to a dark, readable color.</p>",
+                                        "<h2>Color has a foreground and a surface</h2><p><code>color</code> changes text and other foreground content. <code>background-color</code> fills an element's background. CSS accepts named colors, hexadecimal values such as <code>#1d4ed8</code>, RGB, and HSL. Hex is compact; HSL describes hue, saturation, and lightness and can be intuitive when creating color variations.</p><h2>Design for readability first</h2><p>Text must remain distinguishable from its background. Dark text on a light surface is a reliable starting point, but colors should be checked rather than judged only by taste. Do not use color alone to communicate a state; pair it with text, an icon, or another visual cue.</p><h2>Practice sequence</h2><ol><li>Set a dark foreground color on <code>body</code>.</li><li>Set a light background color on the same rule.</li><li>Add a separate link rule with a distinct, readable blue.</li><li>Change one value and observe which part of the preview changes.</li></ol><p><strong>Common mistake:</strong> writing <code>background</code> when you mean text color, or choosing two colors with too little contrast.</p>",
                                         "body {\n  color: #1e293b;\n  background-color: #f8fafc;\n}",
                                         "body {\n  color: #1e293b;\n}",
                                         language="css",
@@ -92,7 +110,7 @@ def seed():
                                     build_lesson(
                                         "CSS Units: Pixels, rem, and Percentages",
                                         "css-units-pixels-rem-percentages",
-                                        "<p><strong>Understand it:</strong> CSS values need units when they represent size or distance. <code>px</code> is a fixed-size unit. <code>rem</code> scales relative to the root text size, which often helps accessible typography. <code>%</code> is relative to a containing size.</p><p><strong>Your task:</strong> make the page text comfortable to read with a rem size, and limit the main content width with a percentage.</p>",
+                                        "<h2>Numbers need context</h2><p>CSS values often need a unit so the browser knows whether a number means pixels, a proportion, or time. <code>px</code> is an absolute CSS length useful for fine details. <code>rem</code> is relative to the root element's font size and is useful for scalable type and spacing. <code>%</code> is relative to a containing value—for example, a child's width is a percentage of its containing block.</p><p>A unitless number is valid for some properties: <code>line-height: 1.5</code> multiplies the element's font size. Do not append <code>px</code> to every number.</p><h2>Responsive choices</h2><p>Prefer flexible constraints such as <code>width: 90%</code> and <code>max-width</code> over a fixed page width that can overflow a small screen. Keep text comfortably readable and let users zoom.</p><h2>Practice sequence</h2><ol><li>Set the body font size to <code>1rem</code>.</li><li>Create a <code>main</code> rule with a percentage width.</li><li>Check the preview at a narrow width and ensure the content stays inside the viewport.</li></ol><p><strong>Common mistake:</strong> using <code>90</code> instead of <code>90%</code>, or using fixed widths for an entire layout.</p>",
                                         "body {\n  font-size: 1rem;\n}\n\nmain {\n  width: 90%;\n}",
                                         "body {\n  font-size: 16px;\n}",
                                         language="css",
@@ -105,7 +123,7 @@ def seed():
                                     build_lesson(
                                         "Spacing with Margin and Padding",
                                         "css-margin-and-padding",
-                                        "<p><strong>Understand it:</strong> padding is space inside an element, between its content and border. Margin is space outside an element, separating it from neighbors. Think of padding as the cushion inside a box and margin as the gap around the box.</p><p><strong>Your task:</strong> add comfortable inner space to a card and room around it.</p>",
+                                        "<h2>Inside versus outside</h2><p>Padding is the space between an element's content and its border. Margin is space outside the border that separates the element from its neighbors. Picture a card: padding is the cushion inside the frame; margin is the gap between this card and another card.</p><p>Both properties accept one to four values. One value applies to every side; two values mean top/bottom then left/right; four values go clockwise from top. <code>gap</code> is often easier for spacing items in Flexbox or Grid.</p><h2>Practice sequence</h2><ol><li>Target <code>.card</code>, not every page element.</li><li>Add <code>padding</code> and observe the space between its text and edge.</li><li>Add <code>margin</code> and observe the space around the card.</li><li>Adjust one value at a time so you can identify its effect.</li></ol><p><strong>Common mistake:</strong> using margin when you want the card's background to extend behind the content; background paints through padding, but not through margin.</p>",
                                         ".card {\n  padding: 1.5rem;\n  margin: 1rem;\n}",
                                         ".card {\n  padding: 1rem;\n}",
                                         language="css",
@@ -119,7 +137,7 @@ def seed():
                                     build_lesson(
                                         "Borders, Width, and the Box Model",
                                         "css-borders-width-box-model",
-                                        "<p><strong>Understand it:</strong> every element is a box made of content, padding, border, and margin. The <code>border</code> draws an edge around the padding and content. <code>border-radius</code> rounds its corners. Width controls the content size unless you change the box-sizing model.</p><p><strong>Your task:</strong> give a card a border, rounded corners, and a sensible width.</p>",
+                                        "<h2>Every element is a box</h2><p>The CSS box model has four layers, from inside out: content, padding, border, and margin. By default, declared <code>width</code> measures the content box; padding and border add to the rendered total. This can make a nominal 300px box wider than 300px.</p><p>With <code>box-sizing: border-box</code>, the declared width includes content, padding, and border. Many projects apply it consistently because the total size is easier to predict. Margin remains outside either sizing model.</p><h2>Practice sequence</h2><ol><li>Give <code>.card</code> a width that fits its container.</li><li>Add a thin border using width, style, and color (for example <code>1px solid #cbd5e1</code>).</li><li>Use <code>border-radius</code> for gently rounded corners.</li><li>Add <code>box-sizing: border-box</code> and compare the result.</li></ol><p><strong>Common mistake:</strong> forgetting that a border needs a style, or adding a fixed width that is wider than the phone viewport.</p>",
                                         ".card {\n  width: 100%;\n  border: 1px solid #cbd5e1;\n  border-radius: 12px;\n  box-sizing: border-box;\n}",
                                         ".card {\n  border: 1px solid #cbd5e1;\n}",
                                         language="css",
@@ -133,7 +151,7 @@ def seed():
                                     build_lesson(
                                         "Typography: Fonts, Line Height, and Text Alignment",
                                         "css-typography-and-line-height",
-                                        "<p><strong>Understand it:</strong> typography affects how easily people can read. <code>font-family</code> chooses a typeface, <code>font-size</code> controls its size, and <code>line-height</code> controls vertical space between lines. A line-height around 1.5 is a useful starting point for body text.</p><p><strong>Your task:</strong> set a sans-serif font and improve paragraph line spacing.</p>",
+                                        "<h2>Typography is part of usability</h2><p><code>font-family</code> chooses a typeface. Provide a fallback list such as <code>Arial, sans-serif</code> so the browser can choose an available font. <code>font-size</code> sets text size; relative units like <code>rem</code> respect user scaling. <code>line-height</code> controls the height of each line box; around 1.5 is a useful body-text starting point, not a rule for every heading.</p><p>Use a clear hierarchy: page title first, section headings next, and body copy with comfortable line length. Avoid tiny type and long full-width lines.</p><h2>Practice sequence</h2><ol><li>Set a sans-serif font on <code>body</code>.</li><li>Set paragraph line-height to <code>1.5</code> or <code>1.6</code>.</li><li>Inspect the preview: can you read a full paragraph comfortably?</li></ol><p><strong>Common mistake:</strong> setting line-height in pixels, which can become cramped or overly loose when text is resized.</p>",
                                         "body {\n  font-family: Arial, sans-serif;\n}\n\np {\n  line-height: 1.5;\n}",
                                         "body {\n  font-family: Arial, sans-serif;\n}",
                                         language="css",
@@ -146,7 +164,7 @@ def seed():
                                     build_lesson(
                                         "Pseudo-Classes: Style Interaction States",
                                         "css-pseudo-classes-hover-focus",
-                                        "<p><strong>Understand it:</strong> a pseudo-class styles an element in a particular state. <code>:hover</code> applies while a pointer is over a link or button. <code>:focus</code> applies when it is selected using a keyboard or other input.</p><p><strong>Accessibility tip:</strong> do not remove the keyboard focus indicator unless you replace it with an equally visible one.</p><p><strong>Your task:</strong> add a hover color and a clear focus outline for links.</p>",
+                                        "<h2>Selectors can match a state</h2><p>A pseudo-class starts with one colon and matches an element in a state. <code>a:hover</code> applies while a pointer is over a link. <code>a:focus</code> applies while that link receives keyboard focus. Modern interfaces often use <code>:focus-visible</code> to emphasize keyboard navigation.</p><p>Keyboard users need to see where they are. Never remove the focus outline unless you replace it with a clearly visible alternative. Hover is not available on every device, so do not hide essential instructions or actions behind hover alone.</p><h2>Practice sequence</h2><ol><li>Add an <code>a:hover</code> rule with a darker link color.</li><li>Add an <code>a:focus</code> or <code>a:focus-visible</code> rule.</li><li>Set a noticeable <code>outline</code> and test with the Tab key.</li></ol><p><strong>Common mistake:</strong> testing only with a mouse. Press Tab and confirm focus remains visible.</p>",
                                         "a:hover {\n  color: #1d4ed8;\n}\n\na:focus {\n  outline: 3px solid #93c5fd;\n}",
                                         "a:hover {\n  color: #1d4ed8;\n}",
                                         language="css",
@@ -159,7 +177,7 @@ def seed():
                                     build_lesson(
                                         "CSS Layout with Flexbox",
                                         "css-flexbox-first-layout",
-                                        "<p><strong>Understand it:</strong> Flexbox arranges items along a row or column. Set <code>display: flex</code> on a parent container to make its direct children flex items. Use <code>gap</code> to add even space between them.</p><p><strong>Your task:</strong> place a group of cards in a row with space between cards. On narrow screens, layouts can wrap with <code>flex-wrap: wrap</code>.</p>",
+                                        "<h2>Put layout on the parent</h2><p>Flexbox is a one-dimensional layout system: it arranges items in a row or a column. Add <code>display: flex</code> to the parent container; its direct children become flex items. The default direction is a row. <code>gap</code> creates even space between items without adding margins to each child.</p><p><code>justify-content</code> distributes items along the main axis. <code>align-items</code> aligns them across the cross axis. These axes change when you change <code>flex-direction</code>. Use <code>flex-wrap: wrap</code> when items should move to another line instead of shrinking too far.</p><h2>Practice sequence</h2><ol><li>Find the parent selector <code>.cards</code>.</li><li>Set <code>display: flex</code> and a consistent <code>gap</code>.</li><li>Add wrapping, then narrow the preview and watch what happens.</li><li>Try <code>justify-content</code> only after identifying the direction and available space.</li></ol><p><strong>Common mistake:</strong> applying <code>display: flex</code> to each card instead of their shared parent.</p>",
                                         ".cards {\n  display: flex;\n  flex-wrap: wrap;\n  gap: 1rem;\n}",
                                         ".cards {\n  display: flex;\n}",
                                         language="css",
@@ -173,7 +191,7 @@ def seed():
                                     build_lesson(
                                         "Responsive CSS with Media Queries",
                                         "css-responsive-media-queries",
-                                        "<p><strong>Understand it:</strong> a media query applies styles only when a condition is true, such as when the screen is narrow. This lets you adjust layouts for phones without duplicating the whole stylesheet.</p><p><strong>Read this:</strong> <code>@media (max-width: 600px)</code> means the rules inside apply when the viewport is 600 pixels wide or less.</p><p><strong>Your task:</strong> write a media query that makes the page heading smaller on narrow screens.</p>",
+                                        "<h2>Responsive design adapts to space</h2><p>A media query applies a group of declarations only when a condition matches. In <code>@media (max-width: 600px)</code>, the styles apply when the viewport is at most 600 CSS pixels wide. The viewport is the visible page area, not necessarily the physical screen width.</p><p>Start with a layout that works in a narrow column, then add enhancements for wider space. This mobile-first approach helps avoid horizontal scrolling and keeps content usable at zoom. Choose breakpoints where the content needs them rather than targeting specific device names.</p><h2>Practice sequence</h2><ol><li>Write <code>@media (max-width: 600px)</code> and open its braces.</li><li>Inside, create an <code>h1</code> rule and reduce its font size.</li><li>Resize the live preview below and verify the rule changes only at the breakpoint.</li></ol><p><strong>Common mistake:</strong> placing declarations outside the media query braces or forgetting the viewport meta tag in a real HTML page.</p>",
                                         "@media (max-width: 600px) {\n  h1 {\n    font-size: 2rem;\n  }\n}",
                                         "@media (max-width: 600px) {\n  h1 {\n    font-size: 2rem;\n  }\n}",
                                         language="css",
@@ -326,7 +344,12 @@ def seed():
                 {
                     "title": "Computer Basics",
                     "lessons": [
-                        build_lesson("Understanding Computer, Internet, and Tooling Basics", "understanding-computer-internet-and-tooling-basics", "Get comfortable with key tools, digital workflows, and how the web works.", "<p>Computers help developers write, test, and ship code.</p>", "<p>Computers are useful tools.</p>"),
+                        build_lesson("Understanding Computer, Internet, and Tooling Basics", "understanding-computer-internet-and-tooling-basics", "<h2>What is a computer?</h2><p>A computer is a system that accepts input, processes instructions, stores information, and produces output. For web development, you give it instructions by writing code; the browser processes HTML, CSS, and JavaScript and displays the result.</p><h2>Hardware and software</h2><p>Hardware is the physical equipment you can touch. Software is the set of instructions and applications that run on it. The operating system (such as Windows, macOS, or Linux) manages hardware and provides the environment where your editor and browser run.</p><h2>How the pieces work together</h2><ol><li>You type a change using an input device.</li><li>The editor stores that text in a file on storage.</li><li>The operating system and browser read the file.</li><li>The CPU processes instructions while RAM holds active work.</li><li>The screen displays the rendered page.</li></ol><p><strong>Learning check:</strong> HTML is content structure, CSS is visual presentation, and the browser is software that interprets them. These are different roles in one workflow.</p>", "<p>Computer workflow: input → processing → storage → output.</p>", "<p>My editor writes a file; my browser displays it.</p>"),
+                        build_lesson("What Are the Basic Parts of a Computer?", "what-are-the-basic-parts-of-a-computer", "<h2>Core components</h2><ul><li><strong>CPU (processor):</strong> carries out instructions and calculations. A faster CPU can complete many tasks more quickly, but it is only one part of overall performance.</li><li><strong>RAM (memory):</strong> fast, temporary workspace for programs and files currently in use. More RAM lets you keep more work open; its contents are cleared when power is off.</li><li><strong>Storage:</strong> long-term space for your operating system, applications, and project files. SSDs are generally faster than older hard disk drives. Files remain saved after shutdown.</li><li><strong>Motherboard:</strong> connects the CPU, memory, storage, and other components.</li><li><strong>GPU:</strong> handles graphics and visual output; many computers include one in the processor.</li></ul><h2>Input and output</h2><p>A keyboard and mouse are input devices. A monitor, speakers, and printer are output devices. A touchscreen can do both. A network adapter lets the computer communicate over a network.</p><h2>Remember the distinction</h2><p>RAM is the temporary workbench; storage is the filing cabinet. The CPU is the worker following instructions. When a browser has many tabs open, it uses RAM; saving your project writes it to storage.</p><p><strong>Quick check:</strong> If a file should still be there tomorrow after shutting down, it belongs on storage, not only in RAM.</p>", "<ul><li>CPU — processes instructions</li><li>RAM — temporary active workspace</li><li>Storage — keeps files long-term</li><li>Input — sends information to the computer</li><li>Output — presents results to you</li></ul>", "<ul><li>CPU</li></ul>"),
+                        build_lesson("How Can You Effectively Work With Your Keyboard, Mouse, and Other Pointing Devices?", "how-can-you-effectively-work-with-keyboard-mouse-and-pointers", "<h2>Input devices help you communicate with the computer</h2><p>The keyboard enters text and commands. A mouse, trackpad, stylus, or touchscreen points, selects, and manipulates items. You can use a keyboard alone for many tasks, which is essential for accessibility and often faster.</p><h2>Useful coding habits</h2><ul><li>Use <kbd>Ctrl</kbd>/<kbd>Cmd</kbd>+<kbd>S</kbd> to save, <kbd>Ctrl</kbd>/<kbd>Cmd</kbd>+<kbd>Z</kbd> to undo, and <kbd>Ctrl</kbd>/<kbd>Cmd</kbd>+<kbd>F</kbd> to find.</li><li>Use <kbd>Tab</kbd> to move between controls and <kbd>Enter</kbd> or <kbd>Space</kbd> to activate them.</li><li>Use the editor's indentation and multi-cursor features carefully; readable code is easier to debug.</li><li>Take breaks and use a comfortable posture—speed is not worth strain.</li></ul><p>Shortcuts differ between operating systems and applications. Check the application's keyboard-shortcut menu when one does not work.</p>", "<p>Save often. Use keyboard navigation as well as pointer input.</p>", "<p>Save with Ctrl or Cmd + S.</p>"),
+                        build_lesson("What Are the Different Types of Internet Service Providers?", "what-are-the-different-types-of-internet-service-providers", "<h2>What an internet provider does</h2><p>An Internet Service Provider (ISP) connects your home or organization to the wider internet. Your device usually connects to a router; the router connects through the ISP to other networks.</p><ul><li><strong>Fiber:</strong> sends data as light through fiber-optic cables; often fast and reliable where available.</li><li><strong>Cable:</strong> uses cable-TV infrastructure and is widely available in many areas.</li><li><strong>DSL:</strong> uses telephone lines; speed can depend on distance from provider equipment.</li><li><strong>Fixed wireless or mobile:</strong> sends data by radio, including cellular networks.</li><li><strong>Satellite:</strong> reaches remote areas, but latency can be higher.</li></ul><h2>What matters for learning web development?</h2><p>You need a reasonably reliable connection to access documentation and publish code, but HTML and CSS can be practiced offline. Speed, reliability, data limits, and local availability matter more than a marketing label.</p>", "<ul><li>Device → router → ISP → internet</li><li>Fiber, cable, DSL, mobile, or satellite are connection types</li></ul>", "<ul><li>Fiber</li></ul>"),
+                        build_lesson("What Are Safe Ways to Sign Into Your Computer?", "what-are-safe-ways-to-sign-into-your-computer", "<h2>Protect the device and your accounts</h2><ol><li>Use a long, unique password or a supported passkey; do not reuse your email password everywhere.</li><li>Turn on multi-factor authentication for important accounts.</li><li>Lock your screen when you step away, especially on a shared device.</li><li>Keep the operating system and browser updated.</li><li>Do not share verification codes or approve sign-in prompts you did not start.</li></ol><h2>Use a password manager</h2><p>A reputable password manager can create and remember unique passwords. Secure the manager with a strong master password and multi-factor authentication. On a shared computer, sign out of accounts and do not save credentials in the browser.</p><p><strong>Warning:</strong> legitimate support staff should never ask you to send a one-time verification code or your password in a message.</p>", "<p>Use unique credentials, multi-factor authentication, updates, and a locked screen.</p>", "<p>Use secure login habits.</p>"),
+                        build_lesson("What Are the Different Types of Tools Professional Developers Use?", "what-are-the-different-types-of-tools-professional-developers-use", "<h2>A developer's everyday toolkit</h2><ul><li><strong>Code editor:</strong> creates and edits source files; examples include VS Code and other editors.</li><li><strong>Browser:</strong> displays a page and provides developer tools to inspect HTML, CSS, errors, and device sizes.</li><li><strong>Terminal:</strong> runs text commands such as starting a local server or installing project dependencies.</li><li><strong>Version control:</strong> Git records changes so you can review work and recover earlier versions.</li><li><strong>Documentation:</strong> trusted references such as MDN explain web platform features.</li></ul><h2>Simple practice loop</h2><ol><li>Edit a file.</li><li>Save it.</li><li>Refresh or reload the page.</li><li>Inspect the result and any browser-console errors.</li><li>Make one small correction and repeat.</li></ol><p>You do not need to master every tool before learning HTML. Start with an editor and browser, then add tools when a task calls for them.</p>", "<ul><li>Editor — write code</li><li>Browser — see and inspect results</li><li>Terminal — run commands</li><li>Git — track changes</li><li>Documentation — look up reliable details</li></ul>", "<ul><li>Text editor</li></ul>"),
                         build_lesson("What Are the Basic Parts of a Computer?", "what-are-the-basic-parts-of-a-computer", "Learn the major hardware and software pieces used in everyday development work.", "<ul><li>CPU</li><li>RAM</li><li>Storage</li><li>Keyboard</li></ul>", "<ul><li>CPU</li></ul>"),
                         build_lesson("How Can You Effectively Work With Your Keyboard, Mouse, and Other Pointing Devices?", "how-can-you-effectively-work-with-keyboard-mouse-and-pointers", "Learn keyboard shortcuts and efficient input habits that speed up development.", "<p>Use shortcuts and proper mouse movement to work faster.</p>", "<p>Use shortcuts.</p>"),
                         build_lesson("What Are the Different Types of Internet Service Providers?", "what-are-the-different-types-of-internet-service-providers", "Understand how internet access is delivered and what options exist.", "<ul><li>Fiber</li><li>Cable</li><li>DSL</li><li>Satellite</li></ul>", "<ul><li>Fiber</li></ul>"),
@@ -570,6 +593,21 @@ def seed():
     ]
 
     for course_data in catalog:
+        if course_data["slug"] == "responsive-web-design":
+            course_data["modules"] = beginner_modules(build_lesson) + course_data["modules"]
+        module_order = [
+            "HTML from Scratch: Build the Page Structure",
+            "Basic HTML", "Semantic HTML", "Forms and Tables", "Accessibility", "HTML Review",
+            "CSS from Scratch: Style the Page",
+            "Basic CSS", "Styling Lists and Links", "Working with Backgrounds and Borders",
+            "Design", "Absolute and Relative Units", "Pseudo Classes and Elements", "Colors",
+            "Styling Forms", "The Box Model", "Flexbox", "Typography", "CSS Accessibility",
+            "Positioning", "Attribute Selectors", "Responsive Design", "Variables", "Grid",
+            "Animations", "CSS Review", "Build Your First Complete Web Page",
+            "Computer Basics", "Working with File Systems", "Browsing the Web Effectively",
+        ]
+        module_rank = {title: index for index, title in enumerate(module_order)}
+        course_data["modules"].sort(key=lambda item: module_rank.get(item["title"], len(module_order)))
         modules_by_title = {module["title"]: module for module in course_data["modules"]}
         html_module = modules_by_title.get("Basic HTML")
         css_module = modules_by_title.get("Basic CSS")
@@ -600,7 +638,7 @@ def seed():
             "Typography": [
                 build_lesson("Create a Readable Type Scale", "css-practice-typography", "<p><strong>Understand it:</strong> typography shapes readability. Use <code>font-family</code> to choose a typeface, <code>font-size</code> for hierarchy, and <code>line-height</code> for space between lines.</p><p><strong>Your task:</strong> choose a sans-serif font, enlarge the main heading, and improve paragraph line spacing.</p>", "body { font-family: Arial, sans-serif; }\nh1 { font-size: 2.5rem; }\np { line-height: 1.6; }", "", language="css", tests=[{"test": "code.includes('font-family')", "message": "Choose a font family."}, {"test": "code.includes('h1') && code.includes('font-size')", "message": "Set a heading size."}, {"test": "code.includes('line-height')", "message": "Set comfortable line spacing."}], hints=["Set font-family on body.", "Give h1 a font-size.", "Use line-height on paragraphs."]),
             ],
-            "Accessibility": [
+            "CSS Accessibility": [
                 build_lesson("Accessible CSS: Focus, Contrast, and Motion", "css-practice-accessibility", "<p><strong>Understand it:</strong> CSS affects whether an interface is usable. Keep text contrast strong, provide a clear keyboard focus ring, and respect reduced-motion preferences.</p><p><strong>Your task:</strong> add a visible focus indicator and disable optional transitions when reduced motion is requested.</p>", "button:focus-visible { outline: 3px solid #2563eb; }\n@media (prefers-reduced-motion: reduce) {\n  .button { transition: none; }\n}", "", language="css", tests=[{"test": "code.includes(':focus') && code.includes('outline')", "message": "Provide visible keyboard focus."}, {"test": "code.includes('prefers-reduced-motion')", "message": "Respect the reduced-motion preference."}], hints=["Use :focus-visible for keyboard focus.", "Set a clear outline.", "Use a prefers-reduced-motion media query."]),
             ],
             "Positioning": [
@@ -645,6 +683,8 @@ def seed():
                 module = Module(course=course, title=module_data["title"], position=module_index)
                 db.session.add(module)
                 db.session.flush()
+            else:
+                module.position = module_index
 
             starter_slugs = {
                 "html-from-scratch-your-first-webpage",
@@ -675,6 +715,18 @@ def seed():
                 "css-grid-simple-columns",
             }
             module_intro_slugs = {
+                "HTML from Scratch: Build the Page Structure": {
+                    "start-html-what-is-html", "start-html-typing-basics", "start-html-document-skeleton",
+                    "start-html-headings-paragraphs", "start-html-attributes", "start-html-links",
+                    "start-html-images", "start-html-lists", "start-html-semantic-structure",
+                    "start-html-forms", "start-html-tables",
+                },
+                "CSS from Scratch: Style the Page": {
+                    "start-css-what-css-does", "start-css-rule-anatomy", "start-css-selectors",
+                    "start-css-colors-contrast", "start-css-values-units", "start-css-box-model",
+                    "start-css-spacing-card", "start-css-typography", "start-css-display-flow",
+                    "start-css-flexbox", "start-css-grid", "start-css-responsive-design", "start-css-accessibility",
+                },
                 "Basic HTML": starter_slugs,
                 "Basic CSS": {slug for slug in css_starter_slugs if slug not in {
                     "css-style-links", "css-style-hover-focus-states",
@@ -687,6 +739,7 @@ def seed():
                 "The Box Model": {"css-box-model-content-padding-border-margin"},
                 "Flexbox": {"css-flexbox-align-items"},
                 "Grid": {"css-grid-simple-columns"},
+                "CSS Accessibility": {"accessibility-in-css"},
             }
             introductory_slugs = module_intro_slugs.get(module_data["title"], set())
             has_missing_starter_lessons = bool(introductory_slugs) and any(
@@ -704,7 +757,16 @@ def seed():
                 starter_position = None
 
             for lesson_index, lesson_data in enumerate(module_data["lessons"], 1):
-                if Lesson.query.filter_by(module_id=module.id, slug=lesson_data["slug"]).first():
+                existing_lesson = Lesson.query.filter_by(module_id=module.id, slug=lesson_data["slug"]).first()
+                if existing_lesson:
+                    existing_lesson.title = lesson_data["title"]
+                    existing_lesson.body = lesson_data["body"]
+                    existing_lesson.example_code = lesson_data["example_code"]
+                    existing_lesson.code = lesson_data["code"]
+                    existing_lesson.language = lesson_data["language"]
+                    existing_lesson.tests = lesson_data["tests"]
+                    existing_lesson.hints = lesson_data["hints"]
+                    existing_lesson.position = lesson_index
                     continue
                 if lesson_data["slug"] in introductory_slugs and starter_position is not None:
                     lesson_position = lesson_index
@@ -752,6 +814,33 @@ def seed():
                     last_position = db.session.query(db.func.max(Lesson.position)).filter_by(module_id=css_module.id).scalar() or 0
                     old_lesson.module_id = css_module.id
                     old_lesson.position = last_position + 1
+            db.session.flush()
+
+        css_accessibility_module = Module.query.filter_by(course_id=course.id, title="CSS Accessibility").first()
+        html_accessibility_module = Module.query.filter_by(course_id=course.id, title="Accessibility").first()
+        if css_accessibility_module and html_accessibility_module:
+            css_accessibility_slugs = {"accessibility-in-css", "css-practice-accessibility"}
+            legacy_lessons = Lesson.query.filter_by(module_id=html_accessibility_module.id).filter(
+                Lesson.slug.in_(css_accessibility_slugs)
+            ).all()
+            for legacy_lesson in legacy_lessons:
+                target_lesson = Lesson.query.filter_by(
+                    module_id=css_accessibility_module.id,
+                    slug=legacy_lesson.slug,
+                ).first()
+                if target_lesson:
+                    for progress in LessonProgress.query.filter_by(lesson_id=legacy_lesson.id).all():
+                        existing_progress = LessonProgress.query.filter_by(
+                            user_id=progress.user_id,
+                            lesson_id=target_lesson.id,
+                        ).first()
+                        if existing_progress:
+                            db.session.delete(progress)
+                        else:
+                            progress.lesson_id = target_lesson.id
+                    db.session.delete(legacy_lesson)
+                else:
+                    legacy_lesson.module_id = css_accessibility_module.id
             db.session.flush()
 
     db.session.commit()

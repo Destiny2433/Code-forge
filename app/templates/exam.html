@@ -1,0 +1,33 @@
+{% extends 'base.html' %}
+{% block title %}Final HTML & CSS Exam · {{ course.title }}{% endblock %}
+{% block meta_description %}Take the final beginner HTML and CSS knowledge check for the {{ course.title }} course.{% endblock %}
+{% block content %}
+<section class="exam-page">
+  <a href="{{ url_for('main.course', slug=course.slug) }}">← Back to course</a>
+  <p class="eyebrow">FINAL KNOWLEDGE CHECK</p>
+  <h1>HTML &amp; CSS Final Exam</h1>
+  <p class="lead">Answer {{ questions|length }} questions about the ideas you practiced. You need 70% to pass. If you do not pass the first time, review the lessons and try again.</p>
+  {% if result %}
+    <div class="exam-result {{ 'passed' if result.passed else 'retry' }}" role="status">
+      <strong>{{ 'You passed!' if result.passed else 'Keep practicing' }}</strong>
+      <p>Your score: {{ result.score }}%{% if result.passed %}. You can now claim your course certificate.{% else %}. Review the lessons and take the exam again when ready.{% endif %}</p>
+      {% if result.passed %}
+        <form method="post" action="{{ url_for('main.certificate', slug=course.slug) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="button">Claim your certificate</button></form>
+      {% endif %}
+    </div>
+  {% endif %}
+  <form method="post" class="exam-form">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    {% for item in questions %}
+      {% set question_number = loop.index %}
+      <fieldset class="exam-question">
+        <legend>{{ loop.index }}. {{ item.question }}</legend>
+        {% for choice in item.choices %}
+          <label><input type="radio" name="q{{ question_number }}" value="{{ loop.index0 }}" required> {{ choice }}</label>
+        {% endfor %}
+      </fieldset>
+    {% endfor %}
+    <button class="button" type="submit">Submit final exam</button>
+  </form>
+</section>
+{% endblock %}

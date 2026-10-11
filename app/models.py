@@ -41,7 +41,10 @@ class Course(db.Model):
     modules = db.relationship("Module", backref="course", cascade="all, delete-orphan", order_by="Module.position")
     students = db.relationship("User", secondary="enrollment", back_populates="enrollments")
     projects = db.relationship("Project", backref="course", lazy=True)
-    def lessons(self): return [l for m in self.modules for l in m.lessons]
+    def learning_modules(self):
+        retired = {"Computer Basics", "Working with File Systems", "Browsing the Web Effectively", "Start Here: Computer and Web Basics"}
+        return [module for module in self.modules if module.title not in retired]
+    def lessons(self): return [lesson for module in self.learning_modules() for lesson in module.lessons]
     def progress_for(self, user):
         total = len(self.lessons())
         done = sum(1 for p in user.progress if p.lesson in self.lessons()) if user.is_authenticated else 0
@@ -75,6 +78,22 @@ class LessonProgress(db.Model):
     completed_at = db.Column(db.DateTime, default=datetime.utcnow)
     lesson = db.relationship("Lesson")
     __table_args__ = (db.UniqueConstraint("user_id", "lesson_id", name="unique_lesson_progress"),)
+
+class LessonDraft(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
+    lesson_id = db.Column(db.Integer, db.ForeignKey("lesson.id"), nullable=False)
+    code_json = db.Column(db.Text, nullable=False, default="{}")
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    __table_args__ = (db.UniqueConstraint("user_id", "lesson_id", name="unique_lesson_draft"),)
+
+class ExamAttempt(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False, index=True)
+    course_id = db.Column(db.Integer, db.ForeignKey("course.id"), nullable=False, index=True)
+    score = db.Column(db.Integer, nullable=False)
+    passed = db.Column(db.Boolean, nullable=False, default=False)
+    attempted_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
 
 class Challenge(db.Model):
     id = db.Column(db.Integer, primary_key=True)

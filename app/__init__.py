@@ -5,14 +5,11 @@ from flask_login import LoginManager
 from flask_migrate import Migrate
 from flask_sqlalchemy import SQLAlchemy
 from flask_wtf.csrf import CSRFProtect
-from flask_limiter import Limiter
-from flask_limiter.util import get_remote_address
 
 db = SQLAlchemy()
 login_manager = LoginManager()
 migrate = Migrate()
 csrf = CSRFProtect()
-limiter = Limiter(key_func=get_remote_address, default_limits=["240 per day", "60 per hour"])
 
 def create_app(test_config=None):
     load_dotenv()
@@ -27,7 +24,7 @@ def create_app(test_config=None):
         SESSION_COOKIE_SECURE=os.getenv("SECURE_COOKIES", "0") == "1",
     )
     if test_config: app.config.update(test_config)
-    db.init_app(app); migrate.init_app(app, db); csrf.init_app(app); limiter.init_app(app)
+    db.init_app(app); migrate.init_app(app, db); csrf.init_app(app)
     login_manager.init_app(app); login_manager.login_view = "main.login"
     from .models import User
     @login_manager.user_loader

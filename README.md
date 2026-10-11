@@ -10,12 +10,16 @@ CodeForge is a practical learning platform for aspiring web developers, built by
 - User dashboard and lesson progress tracking
 - Beginner-friendly lessons with guided hints and examples
 - A step-by-step HTML-from-scratch path covering page structure, elements, headings, paragraphs, links, images, lists, and semantic HTML
+- An HTML typing-basics lesson covering angle brackets, closing slashes, quotes, indentation, and common typing mistakes
 - A guided CSS course that teaches selectors, colors, units, spacing, typography, box model, interaction states, forms, Flexbox, Grid, responsiveness, variables, accessibility, positioning, and transitions
 - A taught CSS path covering selectors, colors, units, spacing, typography, the box model, interaction states, forms, Flexbox, Grid, responsive layouts, variables, accessibility, positioning, and transitions
 - Direct course-to-lesson start links and saved lesson progress
 - Search, blog, project, and challenge pages
 - SEO-friendly metadata and mobile-first layout
 - Certification flow for course completion and verification
+- Final HTML/CSS exam required before certificate claims (70% pass score; unlimited attempts)
+- Installable course PWA with an offline shell and cache for previously visited public course lessons
+- Local and account-backed lesson drafts so typed work is restored rather than cleared
 
 ## Tech stack
 
@@ -54,7 +58,9 @@ To recreate the local database and reload the seeded course content, run:
 
 Learners can preview a lesson without signing in. Sign in or create an account to save completion progress. After passing the lesson checks, choose **Complete and continue** to save progress and open the next lesson. The editor also supports Ctrl+Enter (or Cmd+Enter) to run the checks.
 
-Each lesson keeps the worked example separate from the blank learner editor. For CSS lessons, the preview contains sample HTML and updates as the learner writes styles in the CSS editor.
+Learner editors start blank so students practice typing the markup and styles themselves. The HTML/CSS preview updates as they type; CSS exercises use a small sample page to make visual changes easy to see.
+
+The active learning sequence begins with HTML typing and structure, then advances through HTML topics, CSS fundamentals, responsive layouts, and a final project. A final multiple-choice exam is required after all lessons and before claiming a certificate. The site can be installed as a PWA in supported browsers; previously visited public course pages may be available offline, while signed-in pages are deliberately not cached.
 
 New curriculum lessons are added automatically when the app starts. This update is additive and does not require deleting the database or existing learner progress.
 

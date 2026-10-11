@@ -2,8 +2,13 @@
 
 {% block title %}{{ course.title }} · CodeForge{% endblock %}
 {% block meta_description %}{{ course.description }} Learn the essential concepts behind responsive design, HTML, CSS, accessibility, and practical front-end development with CodeForge by HiveryTech.{% endblock %}
+{% block og_title %}{{ course.title }} · CodeForge{% endblock %}
+{% block og_description %}{{ course.description|truncate(155, True, '…') }}{% endblock %}
+{% block twitter_title %}{{ course.title }} · CodeForge{% endblock %}
+{% block twitter_description %}{{ course.description|truncate(155, True, '…') }}{% endblock %}
 
 {% block content %}
+<script type="application/ld+json">{{ {"@context": "https://schema.org", "@type": "Course", "name": course.title, "description": course.description, "provider": {"@type": "Organization", "name": "HiveryTech"}}|tojson }}</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7616467113460515"
      crossorigin="anonymous"></script>
 <section class="course-header">
@@ -26,7 +31,7 @@
             <button class="button">Enroll free</button>
           </form>
         {% endif %}
-        <a class="button" href="{{ url_for('main.lesson', course_slug=course.slug, lesson_slug=course.lessons()[0].slug) }}">{{ 'Continue learning' if course.progress_for(current_user) else 'Start first lesson' }}</a>
+        {% if next_lesson %}<a class="button" href="{{ url_for('main.lesson', course_slug=course.slug, lesson_slug=next_lesson.slug) }}">{{ 'Continue learning' if course.progress_for(current_user) else 'Start first lesson' }}</a>{% endif %}
         <p class="progress-label">Your progress: {{ course.progress_for(current_user) }}%</p>
       {% else %}
         <a class="button" href="{{ url_for('main.lesson', course_slug=course.slug, lesson_slug=course.lessons()[0].slug) }}">Preview first lesson</a>
@@ -42,9 +47,9 @@
       <strong>Responsive Web Design</strong>
     </div>
     <ul class="course-panel-list">
-      <li>Complete the required projects to qualify for the exam.</li>
-      <li>Pass the Responsive Web Design Certification exam.</li>
-      <li>Earn a verifiable CodeForge certificate.</li>
+      <li>Study and pass the checks in every lesson.</li>
+      <li>Start with HTML typing basics, then learn CSS and responsive page design.</li>
+      <li>Complete every lesson and pass the final exam to earn a verifiable certificate.</li>
     </ul>
   </aside>
 </section>
@@ -54,9 +59,20 @@
     <p class="eyebrow">To earn your {{ course.title }}</p>
     <h2>Certification requirements</h2>
     <ul class="checklist">
-      <li>Complete the five required projects to qualify for the certification exam.</li>
-      <li>Pass the Responsive Web Design Certification exam.</li>
+      <li>Complete every lesson and its code checks in the course.</li>
+      <li>Pass the final HTML and CSS exam after completing all lessons.</li>
     </ul>
+    {% if current_user.is_authenticated and course.progress_for(current_user) == 100 %}
+      {% if passed_exam and existing_certificate %}
+        <a class="button" href="{{ url_for('main.verify', certificate_id=existing_certificate.certificate_id) }}">View your certificate</a>
+      {% elif passed_exam %}
+        <form method="post" action="{{ url_for('main.certificate', slug=course.slug) }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="button">Claim certificate</button>
+        </form>
+      {% else %}
+        <a class="button" href="{{ url_for('main.exam', slug=course.slug) }}">Take the final exam</a>
+      {% endif %}
+    {% endif %}
   </div>
 
   <div class="search-panel">
@@ -71,11 +87,11 @@
       <p class="eyebrow">Courses</p>
       <h2>{{ course.title }}</h2>
     </div>
-    <span class="muted">{{ course.modules|length }} modules</span>
+    <span class="muted">{{ modules|length }} modules · HTML first, then CSS</span>
   </div>
 
   <div class="curriculum-shell">
-    {% for module in course.modules %}
+    {% for module in modules %}
       <details open class="module-card">
         <summary>
           <span>{{ loop.index }}</span>

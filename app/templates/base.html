@@ -3,15 +3,19 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="description" content="CodeForge teaches practical web development, HTML, CSS, and responsive design through guided lessons and projects created by HiveryTech.">
-    <meta name="keywords" content="CodeForge, HiveryTech, web development course, HTML CSS course, responsive design, front-end learning, coding lessons">
-    <meta property="og:title" content="CodeForge by HiveryTech">
-    <meta property="og:description" content="Learn responsive web design and coding fundamentals through structured lessons and practical projects.">
+    <meta name="description" content="{% block meta_description %}CodeForge teaches practical web development, HTML, CSS, and responsive design through guided lessons and projects created by HiveryTech.{% endblock %}">
+    <meta name="robots" content="{% if request.path == '/dashboard' or request.path == '/admin' or request.path.startswith('/verify/') %}noindex, nofollow{% else %}index, follow{% endif %}">
+    <meta property="og:title" content="{% block og_title %}CodeForge by HiveryTech{% endblock %}">
+    <meta property="og:description" content="{% block og_description %}Learn responsive web design and coding fundamentals through structured lessons and practical projects.{% endblock %}">
     <meta property="og:type" content="website">
+    <meta property="og:url" content="{{ request.base_url }}">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="{% block twitter_title %}CodeForge by HiveryTech{% endblock %}">
+    <meta name="twitter:description" content="{% block twitter_description %}Learn responsive web design and coding fundamentals through structured lessons and practical projects.{% endblock %}">
     <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7616467113460515"
      crossorigin="anonymous"></script>
     <meta property="og:site_name" content="CodeForge">
-    <link rel="canonical" href="{{ request.url }}">
+    <link rel="canonical" href="{{ request.base_url }}">
     <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
     <title>{% block title %}CodeForge{% endblock %}</title>
@@ -28,6 +32,7 @@
         <a href="/projects">Projects</a>
         <a href="/blog">Blog</a>
         <a href="/search">Search</a>
+        <button id="install-app" class="nav-cta" type="button" hidden>Install app</button>
         <button id="theme-toggle" aria-label="Toggle theme">☾</button>
         {% if current_user.is_authenticated %}
           <a class="nav-cta" href="/dashboard">Dashboard</a>

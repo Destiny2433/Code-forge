@@ -13,12 +13,120 @@ document.getElementById('theme-toggle')?.addEventListener('click', () => {
   localStorage.setItem('theme', next);
 });
 
+// FCC-style course map: open on desktop, use a closed drawer on narrow screens.
+const lessonShell = document.getElementById('lesson-shell');
+const sidebarToggle = document.getElementById('sidebar-toggle');
+const sidebarScrim = document.getElementById('sidebar-scrim');
+const sidebar = document.getElementById('lesson-sidebar');
+const lessonViewport = window.matchMedia('(max-width: 960px)');
+const setSidebarOpen = open => {
+  if (!lessonShell || !sidebarToggle) return;
+  lessonShell.classList.toggle('sidebar-closed', !open);
+  sidebarToggle.setAttribute('aria-expanded', String(open));
+  sidebarToggle.setAttribute('aria-label', open ? 'Hide course steps' : 'Show course steps');
+  if (sidebar) sidebar.inert = !open;
+};
+if (lessonShell && sidebarToggle) {
+  setSidebarOpen(!lessonViewport.matches);
+  sidebarToggle.addEventListener('click', () => setSidebarOpen(lessonShell.classList.contains('sidebar-closed')));
+  sidebarScrim?.addEventListener('click', () => setSidebarOpen(false));
+  sidebar?.querySelectorAll('.sidebar-step').forEach(step => {
+    step.addEventListener('click', () => {
+      if (lessonViewport.matches) setSidebarOpen(false);
+    });
+  });
+  lessonViewport.addEventListener('change', event => setSidebarOpen(!event.matches));
+}
+
+// Progressive lesson hints, kept behind a small help button to avoid clutter.
+const hintFab = document.getElementById('hint-fab-btn');
+const hintPanel = document.getElementById('hint-panel');
+const hintText = document.getElementById('hint-text');
+const hintClose = document.getElementById('hint-close-btn');
+const hintNext = document.getElementById('hint-next-btn');
+let lessonHints = [];
+let hintIndex = 0;
+try {
+  lessonHints = JSON.parse(document.getElementById('lesson-hints')?.textContent || '[]');
+} catch (_) {
+  lessonHints = [];
+}
+const showHint = () => {
+  if (!hintPanel || !hintText) return;
+  if (!lessonHints.length) {
+    hintText.textContent = 'No hint is available for this step yet. Re-read the task and check one small detail at a time.';
+    if (hintNext) hintNext.hidden = true;
+  } else {
+    hintText.textContent = lessonHints[Math.min(hintIndex, lessonHints.length - 1)];
+    hintIndex = Math.min(hintIndex + 1, lessonHints.length - 1);
+    if (hintNext) hintNext.hidden = hintIndex >= lessonHints.length - 1;
+  }
+  hintPanel.hidden = false;
+};
+hintFab?.addEventListener('click', showHint);
+hintClose?.addEventListener('click', () => { if (hintPanel) hintPanel.hidden = true; });
+hintNext?.addEventListener('click', showHint);
+
 // Split-Pane Editor and Test Runner Logic
 document.querySelectorAll('.editor').forEach(editor => {
   const lang = editor.dataset.language;
+  const draftKey = `codeforge:draft:${editor.dataset.draftKey}`;
   const isWeb = ['html-css', 'responsive-web-design'].includes(editor.dataset.course) && ['html', 'css'].includes(lang);
   const out = document.getElementById('console-output');
   const iframe = document.getElementById('live-preview');
+  const draftStatus = document.getElementById('draft-status');
+  const codeInputs = [...editor.querySelectorAll('.code-file')];
+  let serverDraft = {};
+  try {
+    serverDraft = JSON.parse(document.getElementById('lesson-saved-draft')?.textContent || 'null') || {};
+    codeInputs.forEach(input => {
+      if (Object.hasOwn(serverDraft, input.dataset.file)) input.value = serverDraft[input.dataset.file];
+    });
+    if (Object.keys(serverDraft).length && draftStatus) draftStatus.textContent = 'Account draft restored';
+  } catch (error) {
+    serverDraft = {};
+  }
+
+  try {
+    const savedDraft = localStorage.getItem(draftKey);
+    if (savedDraft && Object.keys(serverDraft).length === 0) {
+      const draft = JSON.parse(savedDraft);
+      codeInputs.forEach(input => {
+        if (Object.hasOwn(draft, input.dataset.file)) input.value = draft[input.dataset.file];
+      });
+      if (draftStatus) draftStatus.textContent = 'Draft restored';
+    }
+  } catch (error) {
+    if (draftStatus) draftStatus.textContent = 'Draft storage unavailable';
+  }
+
+  let serverSaveTimer;
+  const saveDraft = () => {
+    try {
+      const draft = Object.fromEntries(codeInputs.map(input => [input.dataset.file, input.value]));
+      localStorage.setItem(draftKey, JSON.stringify(draft));
+      if (draftStatus) draftStatus.textContent = 'Saved on this device';
+      const saveUrl = editor.dataset.saveDraftUrl;
+      if (saveUrl) {
+        window.clearTimeout(serverSaveTimer);
+        serverSaveTimer = window.setTimeout(async () => {
+          try {
+            const response = await fetch(saveUrl, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'X-CSRFToken': token(), 'Accept': 'application/json' },
+              body: JSON.stringify({ draft })
+            });
+            if (response.ok && draftStatus) draftStatus.textContent = 'Saved to your account';
+          } catch (error) {
+            if (draftStatus) draftStatus.textContent = 'Saved on this device';
+          }
+        }, 700);
+      }
+    } catch (error) {
+      if (draftStatus) draftStatus.textContent = 'Could not save draft';
+    }
+  };
+  codeInputs.forEach(input => input.addEventListener('input', saveDraft));
   
   let pyodideReadyPromise = null;
   if (lang === 'python' && typeof loadPyodide !== 'undefined') {
@@ -47,9 +155,9 @@ document.querySelectorAll('.editor').forEach(editor => {
     if (isWeb) {
       const htmlEditor = document.getElementById('code-box-html');
       const previewMarkup = document.getElementById('preview-html')?.value || '';
-      const html = htmlEditor?.value || previewMarkup;
+      const html = htmlEditor ? htmlEditor.value : previewMarkup;
       const cssEditor = document.getElementById('code-box-css');
-      const css = cssEditor?.value || '';
+      const css = cssEditor ? cssEditor.value : '';
       const htmlCode = html || '<!DOCTYPE html><html><body><h1>Practice preview</h1></body></html>';
       return { html: lang === 'css' ? css : html, css, full: `<style>${css}</style>\n${htmlCode}` };
     }
@@ -71,22 +179,34 @@ document.querySelectorAll('.editor').forEach(editor => {
 
   editor.querySelector('.reset')?.addEventListener('click', () => {
     if (confirm('Are you sure you want to reset your code?')) {
-      window.location.reload();
+      codeInputs.forEach(input => { input.value = ''; });
+      try { localStorage.removeItem(draftKey); } catch (error) {}
+      if (editor.dataset.saveDraftUrl) {
+        fetch(editor.dataset.saveDraftUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-CSRFToken': token(), 'Accept': 'application/json' },
+          body: JSON.stringify({ draft: Object.fromEntries(codeInputs.map(input => [input.dataset.file, input.value])) })
+        }).catch(() => {});
+      }
+      if (draftStatus) draftStatus.textContent = 'Draft cleared';
+      if (isWeb) runWebPreview();
     }
   });
 
   // Client-Side Test Runner parsing the specific tests injected into the page
   const runLessonChecks = async (e) => {
-    const btn = e.target;
+    const btn = e.currentTarget;
     const lessonId = btn.dataset.lesson;
-    const testResults = document.getElementById('test-results');
     const testList = document.getElementById('test-list');
-    
-    testResults.style.display = 'block';
-    testList.innerHTML = '<li>Running tests...</li>';
+    if (!testList) return;
+    testList.replaceChildren();
+    const running = document.createElement('p');
+    running.className = 'test-panel-placeholder';
+    running.textContent = 'Running tests…';
+    testList.appendChild(running);
 
     const filesCode = getCode();
-    const code = isWeb ? filesCode.html : filesCode;
+    const code = isWeb ? (lang === 'css' ? filesCode.css : filesCode.html) : filesCode;
     const codeWithStyles = isWeb ? filesCode.full : code;
 
     // Read tests array
@@ -134,30 +254,28 @@ document.querySelectorAll('.editor').forEach(editor => {
     }
 
     // Render results
-    testList.innerHTML = '';
+    testList.replaceChildren();
     checks.forEach(check => {
-      const li = document.createElement('li');
-      li.className = check.passed ? 'test-pass' : 'test-fail';
-      li.textContent = (check.passed ? '✓ ' : '✗ ') + check.msg;
-      testList.appendChild(li);
+      const row = document.createElement('div');
+      row.className = `test-item ${check.passed ? 'pass' : 'fail'}`;
+      const icon = document.createElement('span');
+      icon.className = 'test-item-icon';
+      icon.setAttribute('aria-hidden', 'true');
+      icon.textContent = check.passed ? '✓' : '✗';
+      const message = document.createElement('span');
+      message.textContent = check.msg;
+      row.append(icon, message);
+      testList.appendChild(row);
     });
 
     if (allPassed) {
-      const li = document.createElement('li');
-      li.style.color = '#10b981';
-      li.style.marginTop = '10px';
-      li.style.fontWeight = 'bold';
-      li.textContent = 'All tests passed! Great job!';
-      testList.appendChild(li);
+      const success = document.createElement('p');
+      success.className = 'test-all-pass';
+      success.textContent = '✓ All tests passed! Great job.';
+      testList.appendChild(success);
       
       // Confetti!
-      if (typeof confetti !== 'undefined') {
-        confetti({
-          particleCount: 150,
-          spread: 70,
-          origin: { y: 0.6 }
-        });
-      }
+      celebrate();
 
       // Hide the check button, show the Next Step button
       btn.style.display = 'none';
@@ -170,11 +288,10 @@ document.querySelectorAll('.editor').forEach(editor => {
       }
     } else {
       // Suggest AI hint on failure
-      const li = document.createElement('li');
-      li.style.marginTop = '10px';
-      li.style.fontStyle = 'italic';
-      li.textContent = 'Some tests failed. Ask the AI Tutor for a hint!';
-      testList.appendChild(li);
+      const guidance = document.createElement('p');
+      guidance.className = 'test-guidance';
+      guidance.textContent = 'Some tests failed. Review the steps and try again, or use a hint.';
+      testList.appendChild(guidance);
     }
   };
 
@@ -216,6 +333,25 @@ async function submitLesson(lessonId, btn) {
     btn.disabled = false;
     btn.textContent = originalText;
     alert(error.message || 'Could not save your lesson progress. Check your connection and try again.');
+  }
+}
+
+function celebrate() {
+  if (typeof confetti !== 'undefined') {
+    confetti({ particleCount: 150, spread: 80, origin: { y: 0.62 } });
+    return;
+  }
+
+  const colors = ['#2677ff', '#10b981', '#f59e0b', '#ec4899', '#8b5cf6'];
+  for (let index = 0; index < 80; index += 1) {
+    const piece = document.createElement('span');
+    piece.className = 'confetti-piece';
+    piece.style.left = `${Math.random() * 100}vw`;
+    piece.style.backgroundColor = colors[index % colors.length];
+    piece.style.setProperty('--fall-duration', `${1.5 + Math.random() * 1.6}s`);
+    piece.style.setProperty('--spin', `${Math.random() * 900 - 450}deg`);
+    document.body.appendChild(piece);
+    window.setTimeout(() => piece.remove(), 3300);
   }
 }
 
@@ -302,5 +438,23 @@ if (courseSearch) {
   courseSearch.addEventListener('input', filterLessons);
 }
 
-// PWA
-if ('serviceWorker' in navigator) navigator.serviceWorker.register('/static/sw.js');
+// Installable/offline course PWA
+let installPromptEvent = null;
+const installButton = document.getElementById('install-app');
+window.addEventListener('beforeinstallprompt', event => {
+  event.preventDefault();
+  installPromptEvent = event;
+  if (installButton) installButton.hidden = false;
+});
+installButton?.addEventListener('click', async () => {
+  if (!installPromptEvent) return;
+  installPromptEvent.prompt();
+  await installPromptEvent.userChoice;
+  installPromptEvent = null;
+  installButton.hidden = true;
+});
+window.addEventListener('appinstalled', () => {
+  installPromptEvent = null;
+  if (installButton) installButton.hidden = true;
+});
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js', { scope: '/' });

@@ -1,1 +1,13 @@
-{"name":"HiveryTech Academy","short_name":"HiveryTech","start_url":"/","display":"standalone","background_color":"#08111f","theme_color":"#08111f","icons":[]}
+{
+	"name": "CodeForge HTML and CSS Academy",
+	"short_name": "CodeForge",
+	"description": "Learn HTML and CSS from the first typed tag through responsive web pages.",
+	"start_url": "/courses/responsive-web-design",
+	"scope": "/",
+	"display": "standalone",
+	"background_color": "#08111f",
+	"theme_color": "#2677ff",
+	"icons": [
+		{ "src": "/static/icons/codeforge.svg", "sizes": "any 192x192 512x512", "type": "image/svg+xml", "purpose": "any maskable" }
+	]
+}
