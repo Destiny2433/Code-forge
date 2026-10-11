@@ -29,6 +29,11 @@ class User(UserMixin, db.Model):
         return total
 
 class Course(db.Model):
+    BEGINNER_PATH_MODULES = (
+        "HTML from Scratch: Build the Page Structure",
+        "CSS from Scratch: Style the Page",
+        "Build Your First Complete Web Page",
+    )
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(160), nullable=False)
     slug = db.Column(db.String(180), unique=True, nullable=False, index=True)
@@ -42,8 +47,9 @@ class Course(db.Model):
     students = db.relationship("User", secondary="enrollment", back_populates="enrollments")
     projects = db.relationship("Project", backref="course", lazy=True)
     def learning_modules(self):
-        retired = {"Computer Basics", "Working with File Systems", "Browsing the Web Effectively", "Start Here: Computer and Web Basics"}
-        return [module for module in self.modules if module.title not in retired]
+        """Return the intentional beginner sequence, not the legacy topic archive."""
+        by_title = {module.title: module for module in self.modules}
+        return [by_title[title] for title in self.BEGINNER_PATH_MODULES if title in by_title]
     def lessons(self): return [lesson for module in self.learning_modules() for lesson in module.lessons]
     def progress_for(self, user):
         total = len(self.lessons())

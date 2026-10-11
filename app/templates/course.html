@@ -47,8 +47,8 @@
       <strong>Responsive Web Design</strong>
     </div>
     <ul class="course-panel-list">
-      <li>Study and pass the checks in every lesson.</li>
-      <li>Start with HTML typing basics, then learn CSS and responsive page design.</li>
+      <li>Start by learning HTML, the words and structure of a webpage.</li>
+      <li>Next learn CSS, the rules that control how the page looks.</li>
       <li>Complete every lesson and pass the final exam to earn a verifiable certificate.</li>
     </ul>
   </aside>
@@ -85,28 +85,31 @@
   <div class="section-head">
     <div>
       <p class="eyebrow">Courses</p>
-      <h2>{{ course.title }}</h2>
+      <h2>Your learning path</h2>
+      <p class="curriculum-intro">Take one stage at a time. Finish HTML before CSS, then use both skills to build a page.</p>
     </div>
-    <span class="muted">{{ modules|length }} modules · HTML first, then CSS</span>
+    <span class="muted">{{ modules|length }} stages · {{ course.lessons()|length }} short lessons</span>
   </div>
 
   <div class="curriculum-shell">
     {% for module in modules %}
-      <details open class="module-card">
+      <details class="module-card" {% if loop.first %}open{% endif %}>
         <summary>
           <span>{{ loop.index }}</span>
           <div>
-            <strong>{{ module.title }}</strong>
-            <small>{{ module.lessons|length }} steps</small>
+            <strong>{% if loop.index == 1 %}1. Learn HTML{% elif loop.index == 2 %}2. Learn CSS{% else %}3. Build a webpage{% endif %}</strong>
+            <small>{{ module.lessons|length }} small lessons</small>
           </div>
           <em>{{ module.lessons|selectattr('id', 'in', completed_lesson_ids)|list|length }} of {{ module.lessons|length }} steps complete</em>
         </summary>
+
+        <p class="stage-intro">{% if loop.index == 1 %}Learn how to type page content and organize it with headings, paragraphs, links, images, lists, forms, and tables.{% elif loop.index == 2 %}Learn how to style that content with color, spacing, text, layout, and responsive rules.{% else %}Combine the HTML and CSS skills to plan, build, and review a complete responsive page.{% endif %}</p>
 
         <div class="module-group">
           {% for lesson in module.lessons %}
             <a href="{{ url_for('main.lesson', course_slug=course.slug, lesson_slug=lesson.slug) }}" class="lesson-row{% if lesson.id in completed_lesson_ids %} completed{% endif %}">
               <span class="lesson-name">{{ lesson.title }}</span>
-              <span class="lesson-tag">{{ 'Complete' if lesson.id in completed_lesson_ids else 'Start lesson' }}</span>
+              <span class="lesson-tag">{% if lesson.id in completed_lesson_ids %}Complete{% else %}Lesson {{ loop.index }}{% endif %}</span>
             </a>
           {% endfor %}
         </div>

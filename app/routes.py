@@ -82,11 +82,13 @@ def lesson(course_slug, lesson_slug):
     total_lessons = len(all_lessons)
     prev_lesson = all_lessons[lesson_index - 1] if lesson_index > 0 else None
     next_lesson = all_lessons[lesson_index + 1] if lesson_index + 1 < total_lessons else None
+    learning_modules = c.learning_modules()
     response = make_response(render_template(
         "lesson.html",
         course=c,
         lesson=l,
         lessons=all_lessons,
+        modules=learning_modules,
         saved_draft=saved_draft,
         completed_lesson_ids=completed_lesson_ids,
         lesson_index=lesson_index,
@@ -271,3 +273,9 @@ def offline_page():
     return send_from_directory(current_app.static_folder, "offline.html")
 @bp.route("/sitemap.xml")
 def sitemap(): return current_app.response_class(render_template("sitemap.xml", courses=Course.query.filter_by(published=True).all(), articles=Article.query.all()), mimetype="application/xml")
+@bp.get("/google7d947423d6c5618b.html")
+def google_verification():
+    return current_app.response_class(
+        "google-site-verification: google7d947423d6c5618b.html",
+        mimetype="text/html"
+    )

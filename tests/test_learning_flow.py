@@ -38,8 +38,12 @@ class LearningFlowTests(unittest.TestCase):
     def test_html_first_path_and_typing_lesson(self):
         course_page = self.client.get("/courses/responsive-web-design")
         self.assertEqual(course_page.status_code, 200)
-        self.assertIn(b"HTML from Scratch: Build the Page Structure", course_page.data)
+        self.assertIn(b"1. Learn HTML", course_page.data)
         self.assertNotIn(b"Start Here: Computer and Web Basics", course_page.data)
+        self.assertIn(b"1. Learn HTML", course_page.data)
+        self.assertIn(b"2. Learn CSS", course_page.data)
+        self.assertIn(b"3. Build a webpage", course_page.data)
+        self.assertLess(len(self.lessons), 40, "The active beginner path should not include the legacy 100+ lesson archive.")
         lesson = next(item for item in self.lessons if item.slug == "start-html-typing-basics")
         page = self.client.get(f"/courses/responsive-web-design/{lesson.slug}")
         self.assertEqual(page.status_code, 200)
@@ -51,6 +55,8 @@ class LearningFlowTests(unittest.TestCase):
         self.assertIn(b"Step", page.data)
         self.assertIn(b"Previous", page.data)
         self.assertIn(b"Next", page.data)
+        self.assertIn(b"Learn HTML", page.data)
+        self.assertIn(b"Learn CSS", page.data)
 
     def test_css_lesson_has_blank_practice_and_preview(self):
         lesson = next(item for item in self.lessons if item.slug == "start-css-what-css-does")

@@ -42,22 +42,37 @@
     <div class="sidebar-progress-bar">
       <div class="sidebar-progress-fill" style="width: {{ ((lessons|selectattr('id', 'in', completed_lesson_ids)|list|length) / total_lessons * 100)|round|int if total_lessons else 0 }}%"></div>
     </div>
-    <nav class="sidebar-steps" aria-label="Lesson steps">
-      {% for l in lessons %}
-        <a href="{{ url_for('main.lesson', course_slug=course.slug, lesson_slug=l.slug) }}"
-           class="sidebar-step {% if l.id == lesson.id %}current{% elif l.id in completed_lesson_ids %}completed{% endif %}"
-           {% if l.id == lesson.id %}aria-current="step"{% endif %}>
-          <span class="sidebar-step-icon">
-            {% if l.id in completed_lesson_ids %}
-              <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="#10b981" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="2,7 5,10 11,3"/></svg>
-            {% elif l.id == lesson.id %}
-              <svg width="10" height="10" viewBox="0 0 10 10" fill="#3b82f6"><circle cx="5" cy="5" r="4"/></svg>
-            {% else %}
-              <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="#64748b" stroke-width="1.8"><circle cx="5" cy="5" r="4"/></svg>
-            {% endif %}
-          </span>
-          <span class="sidebar-step-title">{{ l.title }}</span>
-        </a>
+    <nav class="sidebar-steps" aria-label="Course stages">
+      {% for module in modules %}
+        {% set module_done = module.lessons|selectattr('id', 'in', completed_lesson_ids)|list|length %}
+        <details class="sidebar-module" {% if module.id == lesson.module_id %}open{% endif %}>
+          <summary>
+            <span class="sidebar-module-number">{{ loop.index }}</span>
+            <span class="sidebar-module-heading">
+              <strong>{% if loop.index == 1 %}Learn HTML{% elif loop.index == 2 %}Learn CSS{% else %}Build a webpage{% endif %}</strong>
+              <small>{{ module_done }}/{{ module.lessons|length }} lessons</small>
+            </span>
+            <span class="sidebar-module-chevron" aria-hidden="true">⌄</span>
+          </summary>
+          <div class="sidebar-module-lessons">
+            {% for l in module.lessons %}
+              <a href="{{ url_for('main.lesson', course_slug=course.slug, lesson_slug=l.slug) }}"
+                 class="sidebar-step {% if l.id == lesson.id %}current{% elif l.id in completed_lesson_ids %}completed{% endif %}"
+                 {% if l.id == lesson.id %}aria-current="step"{% endif %}>
+                <span class="sidebar-step-icon">
+                  {% if l.id in completed_lesson_ids %}
+                    <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="#10b981" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="2,7 5,10 11,3"/></svg>
+                  {% elif l.id == lesson.id %}
+                    <svg width="10" height="10" viewBox="0 0 10 10" fill="#3b82f6"><circle cx="5" cy="5" r="4"/></svg>
+                  {% else %}
+                    <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="#64748b" stroke-width="1.8"><circle cx="5" cy="5" r="4"/></svg>
+                  {% endif %}
+                </span>
+                <span class="sidebar-step-title">{{ l.title }}</span>
+              </a>
+            {% endfor %}
+          </div>
+        </details>
       {% endfor %}
     </nav>
   </aside>
